@@ -23,6 +23,7 @@
     "setup:lessons": "tsx src/seed-lessons.ts"
     ,"cleanup:legacy": "tsx src/cleanup-legacy.ts"
     ,"inspect:certification": "tsx src/inspect-certification-feed.ts"
+    ,"setup:certification": "tsx src/seed-certification.ts"
   },
   "engines": {
     "node": ">=20"
