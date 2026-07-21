@@ -43,6 +43,8 @@ so Discord's privileged Message Content intent is not required.
 Wiki test-result webhook messages update progress automatically. Passing all nine lesson
 tests and the final assessment grants `EFP Certified` and posts to the certification wall.
 Use `/my-progress` for self-service status and `/certification` for management actions.
+Run `npm run setup:certification` to pin the Connect Wiki, My Progress, and Open Training
+control panel in the certification roadmap channel.
 
 `npm run cleanup:legacy` removes the unused default general/rules placeholders and their
 empty default categories after native Community settings point to the real EFP channels.
