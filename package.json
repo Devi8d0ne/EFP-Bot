@@ -1,0 +1,36 @@
+{
+  "name": "efp-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Discord server management bot for EFP",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "deploy:commands": "tsx src/deploy-commands.ts",
+    "setup:guild": "tsx src/setup-guild.ts",
+    "setup:webhooks": "tsx src/setup-webhooks.ts",
+    "inspect:guild": "tsx src/inspect-guild.ts",
+    "setup:content": "tsx src/seed-content.ts",
+    "setup:native": "tsx src/configure-native.ts",
+    "verify:guild": "tsx src/verify-guild.ts",
+    "setup:forums": "tsx src/seed-forums.ts",
+    "setup:order": "tsx src/order-guild.ts",
+    "setup:audio": "tsx src/upload-training-audio.ts"
+    ,"setup:wiki-links": "tsx src/seed-wiki-links.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "discord.js": "^14.22.1",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
