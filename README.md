@@ -23,6 +23,17 @@ links, and roles are assigned manually by server administrators.
 To configure the guild directly from this computer without using the slash command,
 run `npm run setup:guild`.
 
+`npm run setup:webhooks` creates the private wiki-test, sales-tracker, and recruiting
+webhooks and stores their URLs in the ignored `.discord-webhooks.json` file. The bot
+is only a server-management bridge; the deployed sites deliver their own notifications.
+
+Run `npm run setup:lessons` locally after `setup:guild` to copy all nine complete lesson
+scripts into their Discord channels and pin the matching hosted MP3 and wiki-test links.
+
+`npm run cleanup:legacy` removes the unused default general/rules placeholders and their
+empty default categories after native Community settings point to the real EFP channels.
+It keeps `moderator-only` and moves it to the bottom.
+
 ## Updating the server
 
 Edit `src/server-layout.ts`, then run `/setup-server` again. Existing roles, categories,

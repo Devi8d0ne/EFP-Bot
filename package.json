@@ -19,7 +19,9 @@
     "setup:forums": "tsx src/seed-forums.ts",
     "setup:order": "tsx src/order-guild.ts",
     "setup:audio": "tsx src/upload-training-audio.ts"
-    ,"setup:wiki-links": "tsx src/seed-wiki-links.ts"
+    ,"setup:wiki-links": "tsx src/seed-wiki-links.ts",
+    "setup:lessons": "tsx src/seed-lessons.ts"
+    ,"cleanup:legacy": "tsx src/cleanup-legacy.ts"
   },
   "engines": {
     "node": ">=20"

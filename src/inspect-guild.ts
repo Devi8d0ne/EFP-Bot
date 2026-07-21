@@ -18,6 +18,8 @@ try {
   const member = await guild.members.fetchMe();
 
   console.log(`Server: ${guild.name} (${guild.id})`);
+  console.log(`Community rules: ${guild.rulesChannel?.name ?? "none"}`);
+  console.log(`Community updates: ${guild.publicUpdatesChannel?.name ?? "none"}`);
   console.log(`Features: ${guild.features.join(", ") || "none"}`);
   console.log(`Bot: ${member.user.tag} (${member.id})`);
   console.log(`Bot permissions: ${member.permissions.toArray().join(", ")}`);
