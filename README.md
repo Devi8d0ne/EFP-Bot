@@ -10,7 +10,8 @@ links, and roles are assigned manually by server administrators.
 - Node.js 20 or newer
 - A Discord application and bot token
 - The bot installed in the target server with `bot` and `applications.commands` scopes
-- Bot permissions: Manage Roles, Manage Channels, View Channels, Send Messages
+- Bot permissions: Manage Roles, Manage Channels, Manage Messages, View Channels,
+  Send Messages, and Read Message History
 
 ## Local setup
 
@@ -40,11 +41,21 @@ stored in the ignored `.data/certification.json` file. Set `EFP_WIKI_AGENTS_PATH
 the private result feed and authenticates through its own ignored webhook configuration,
 so Discord's privileged Message Content intent is not required.
 
-Wiki test-result webhook messages update progress automatically. Passing all nine lesson
-tests and the final assessment grants `EFP Certified` and posts to the certification wall.
-Use `/my-progress` for self-service status and `/certification` for management actions.
-Run `npm run setup:certification` to pin the Connect Wiki, My Progress, and Open Training
-control panel in the certification roadmap channel.
+Wiki test-result webhook messages update progress automatically. Certification eligibility
+requires passing each of the nine distinct lesson tests plus the final assessment. Eligible
+agents are sent to private manager review; manager approval grants `EFP Certified` and posts
+the graduation to the certification wall. Use `/my-progress` for self-service status and
+`/certification` for management actions. Run `npm run setup:certification` to pin the Connect
+Wiki, My Progress, and Open Training control panel in the certification roadmap channel.
+
+The bot needs **Read Message History** to reconcile result-feed messages and **Manage
+Messages** to pin and maintain certification control messages. Keep both permissions enabled
+for the bot in the certification channels.
+
+`.data/certification.json` is runtime state, not a rebuildable cache: it contains account
+links, progress, and processed-message history. Local development keeps it on disk. A hosted
+deployment must set `EFP_CERTIFICATION_DATA_PATH` to a file on a mounted persistent volume;
+an ephemeral filesystem will lose certification state on a restart or redeploy.
 
 `npm run cleanup:legacy` removes the unused default general/rules placeholders and their
 empty default categories after native Community settings point to the real EFP channels.

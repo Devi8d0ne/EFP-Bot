@@ -14,11 +14,11 @@ try {
   const embed = new EmbedBuilder()
     .setColor(0xe6a817)
     .setTitle("Connect. Learn. Certify.")
-    .setDescription("Connect your Discord profile to your EFP Wiki account once. Lesson results will then follow your Discord profile automatically, and passing the final certification grants the gold **EFP Certified** role.")
+    .setDescription("Connect your Discord profile to your EFP Wiki account once. Lesson results will follow your Discord profile automatically. Pass all nine distinct lesson tests and the final assessment to enter private manager review; approval grants the gold **EFP Certified** role.")
     .addFields(
       { name: "1 • Connect privately", value: "Enter the same email and ZIP used by the EFP Wiki. Credentials are verified, then immediately discarded." },
-      { name: "2 • Complete training", value: "Pass all nine lesson tests and use **My Progress** whenever you want a private status check." },
-      { name: "3 • Get certified", value: "Pass the final assessment to receive the role and graduate on the Certification Wall." },
+      { name: "2 • Complete training", value: "Pass each of the nine distinct lesson tests and use **My Progress** whenever you want a private status check." },
+      { name: "3 • Get certified", value: "Pass the final assessment, then complete manager review. Approval grants the role and graduates you on the Certification Wall." },
     )
     .setFooter({ text: marker });
   const components = [new ActionRowBuilder<ButtonBuilder>().addComponents(

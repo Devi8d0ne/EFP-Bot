@@ -1,7 +1,24 @@
-import { ChannelType } from "discord.js";
+import { ChannelType, PermissionFlagsBits } from "discord.js";
 
 const MEMBER_ROLES = ["Admin", "Office", "General Manager", "Agent"];
 const OPERATIONS_ROLES = ["Admin", "Office", "General Manager"];
+
+const ORDINARY_USER_PERMISSIONS: bigint[] = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+  PermissionFlagsBits.SendMessagesInThreads,
+  PermissionFlagsBits.CreatePublicThreads,
+  PermissionFlagsBits.CreatePrivateThreads,
+  PermissionFlagsBits.ReadMessageHistory,
+  PermissionFlagsBits.AddReactions,
+  PermissionFlagsBits.Connect,
+  PermissionFlagsBits.Speak,
+  PermissionFlagsBits.Stream,
+  PermissionFlagsBits.RequestToSpeak,
+  PermissionFlagsBits.SendVoiceMessages,
+  PermissionFlagsBits.UseApplicationCommands,
+  PermissionFlagsBits.UseVAD,
+];
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   "START HERE": "👋",
@@ -49,6 +66,10 @@ export type RoleDefinition = {
   color: number;
   hoist?: boolean;
   mentionable?: boolean;
+  // The safe base permission set for this role. Setup reconciles it on every
+  // run unless preservePermissions is set for the manually managed Admin role.
+  permissions?: bigint[];
+  preservePermissions?: boolean;
 };
 
 export type ChannelDefinition = {
@@ -75,7 +96,41 @@ export const serverLayout: {
   categories: CategoryDefinition[];
 } = {
   roles: [
-    { name: "EFP Certified", color: 0xe6a817, hoist: true, mentionable: false },
+    {
+      name: "Admin",
+      color: 0xe74c3c,
+      hoist: true,
+      mentionable: false,
+      permissions: [
+        ...ORDINARY_USER_PERMISSIONS,
+        PermissionFlagsBits.ManageRoles,
+        PermissionFlagsBits.ManageChannels,
+      ],
+      preservePermissions: true,
+    },
+    {
+      name: "Office",
+      color: 0x3498db,
+      hoist: true,
+      mentionable: false,
+      permissions: [...ORDINARY_USER_PERMISSIONS],
+    },
+    {
+      name: "General Manager",
+      color: 0x9b59b6,
+      hoist: true,
+      mentionable: false,
+      permissions: [...ORDINARY_USER_PERMISSIONS],
+    },
+    { name: "Field Manager", color: 0x2ecc71, hoist: true, mentionable: false, permissions: [] },
+    {
+      name: "Agent",
+      color: 0x95a5a6,
+      hoist: false,
+      mentionable: false,
+      permissions: [...ORDINARY_USER_PERMISSIONS],
+    },
+    { name: "EFP Certified", color: 0xe6a817, hoist: true, mentionable: false, permissions: [] },
   ],
   categories: [
     {
@@ -189,6 +244,7 @@ export const serverLayout: {
       privateTo: OPERATIONS_ROLES,
       channels: [
         { name: "manager-briefing", topic: "Read-only leadership priorities, decisions, and weekly direction.", readOnly: true, postAs: ["Admin", "General Manager"] },
+        { name: "certification-review", topic: "Private final certification approvals and coaching decisions for eligible agents." },
         { name: "field-coaching", topic: "Agent coaching plans, roleplay priorities, observations, and retraining assignments." },
         { name: "performance-review", topic: "Team scorecards, progress reviews, and leadership follow-through." },
         { name: "territory-and-staffing", topic: "Territory plans, field coverage, staffing, and daily deployment." },

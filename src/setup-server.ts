@@ -15,6 +15,32 @@ export type SetupSummary = {
   channelsUpdated: number;
 };
 
+function validateLayoutRoleReferences() {
+  const declared = new Set<string>();
+  for (const definition of serverLayout.roles) {
+    if (declared.has(definition.name)) throw new Error(`Duplicate role definition: ${definition.name}`);
+    declared.add(definition.name);
+  }
+
+  const referenced = new Set<string>();
+  for (const category of serverLayout.categories) {
+    for (const roleName of category.privateTo ?? []) referenced.add(roleName);
+    for (const channel of category.channels) {
+      for (const roleName of channel.privateTo ?? []) referenced.add(roleName);
+      for (const roleName of channel.postAs ?? []) referenced.add(roleName);
+    }
+  }
+
+  const missing = [...referenced].filter((roleName) => !declared.has(roleName));
+  if (missing.length) {
+    throw new Error(`Guild layout references roles that are not declared: ${missing.join(", ")}`);
+  }
+}
+
+function desiredPermissionBits(permissions: bigint[] | undefined) {
+  return (permissions ?? []).reduce((bits, permission) => bits | permission, 0n);
+}
+
 function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivateTo?: string[]) {
   const privateTo = definition.privateTo ?? categoryPrivateTo;
   const values: Array<{ id: string; allow?: bigint[]; deny?: bigint[] }> = [];
@@ -31,17 +57,29 @@ function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivate
           PermissionFlagsBits.Connect,
           PermissionFlagsBits.Speak,
           PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.SendMessagesInThreads,
-          ...(!definition.readOnly ? [PermissionFlagsBits.SendMessages] : []),
+          ...(!definition.readOnly
+            ? [
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.SendMessagesInThreads,
+                PermissionFlagsBits.CreatePublicThreads,
+                PermissionFlagsBits.CreatePrivateThreads,
+              ]
+            : []),
         ],
       });
     }
   }
 
   if (definition.readOnly) {
+    const readOnlyDeny = [
+      PermissionFlagsBits.SendMessages,
+      PermissionFlagsBits.SendMessagesInThreads,
+      PermissionFlagsBits.CreatePublicThreads,
+      PermissionFlagsBits.CreatePrivateThreads,
+    ];
     const everyone = values.find((value) => value.id === guild.roles.everyone.id);
-    if (everyone) everyone.deny = [...(everyone.deny ?? []), PermissionFlagsBits.SendMessages];
-    else values.push({ id: guild.roles.everyone.id, deny: [PermissionFlagsBits.SendMessages] });
+    if (everyone) everyone.deny = [...new Set([...(everyone.deny ?? []), ...readOnlyDeny])];
+    else values.push({ id: guild.roles.everyone.id, deny: readOnlyDeny });
 
     for (const roleName of definition.postAs ?? []) {
       const role = guild.roles.cache.find((candidate) => candidate.name === roleName);
@@ -73,8 +111,69 @@ function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivate
 
 export async function setupServer(guild: Guild): Promise<SetupSummary> {
   const summary: SetupSummary = { rolesCreated: 0, rolesUpdated: 0, categoriesCreated: 0, channelsCreated: 0, channelsUpdated: 0 };
+  validateLayoutRoleReferences();
   await guild.roles.fetch();
   await guild.channels.fetch();
+
+  const botMember = guild.members.me ?? await guild.members.fetchMe();
+  const requiredBotPermissions = [PermissionFlagsBits.ManageRoles, PermissionFlagsBits.ManageChannels];
+  const missingBotPermissions = requiredBotPermissions.filter((permission) => !botMember.permissions.has(permission));
+  if (missingBotPermissions.length) {
+    throw new Error("Bot requires Manage Roles and Manage Channels before guild setup can run safely.");
+  }
+
+  const duplicateRequiredRoles = serverLayout.roles
+    .map((definition) => definition.name)
+    .filter((roleName) => guild.roles.cache.filter((role) => role.name === roleName).size > 1);
+  if (duplicateRequiredRoles.length) {
+    throw new Error(`Duplicate required roles must be resolved before setup: ${duplicateRequiredRoles.join(", ")}`);
+  }
+
+  const blockedReconciliation = serverLayout.roles.flatMap((definition) => {
+    if (definition.preservePermissions) return [];
+    const existing = guild.roles.cache.find((role) => role.name === definition.name);
+    if (!existing || existing.permissions.bitfield === desiredPermissionBits(definition.permissions) || existing.editable) return [];
+    return [definition.name];
+  });
+  if (blockedReconciliation.length) {
+    throw new Error(
+      `Move the bot role above these roles so setup can reconcile their permissions safely: ${blockedReconciliation.join(", ")}`,
+    );
+  }
+
+  const createdRoleIds = new Set<string>();
+  for (const definition of serverLayout.roles) {
+    if (guild.roles.cache.some((role) => role.name === definition.name)) continue;
+    const created = await guild.roles.create({
+      name: definition.name,
+      colors: { primaryColor: definition.color },
+      hoist: definition.hoist ?? false,
+      mentionable: definition.mentionable ?? false,
+      permissions: definition.permissions,
+      reason: "EFP server configuration",
+    });
+    createdRoleIds.add(created.id);
+    summary.rolesCreated++;
+  }
+  await guild.roles.fetch();
+
+  const missingRoles = serverLayout.roles
+    .map((definition) => definition.name)
+    .filter((roleName) => !guild.roles.cache.some((role) => role.name === roleName));
+  if (missingRoles.length) throw new Error(`Required roles were not created: ${missingRoles.join(", ")}`);
+
+  for (const definition of serverLayout.roles) {
+    const existing = guild.roles.cache.find((role) => role.name === definition.name);
+    if (!existing || createdRoleIds.has(existing.id) || !existing.editable) continue;
+    await existing.edit({
+      colors: { primaryColor: definition.color },
+      hoist: definition.hoist ?? false,
+      mentionable: definition.mentionable ?? false,
+      ...(!definition.preservePermissions ? { permissions: definition.permissions ?? [] } : {}),
+      reason: "EFP server configuration",
+    });
+    summary.rolesUpdated++;
+  }
 
   // EFP is invitation-only. Removing this from @everyone ensures ordinary
   // members cannot create invite links; server administrators still bypass it.
@@ -96,18 +195,6 @@ export async function setupServer(guild: Guild): Promise<SetupSummary> {
       guild.roles.everyone.permissions.remove(...restrictedUntilRole),
       "EFP read-only recruiting lobby until administrator role assignment",
     );
-  }
-
-  for (const definition of serverLayout.roles) {
-    const existing = guild.roles.cache.find((role) => role.name === definition.name);
-    const values = { colors: { primaryColor: definition.color }, hoist: definition.hoist ?? false, mentionable: definition.mentionable ?? false, reason: "EFP server configuration" };
-    if (existing) {
-      await existing.edit(values);
-      summary.rolesUpdated++;
-    } else {
-      await guild.roles.create({ name: definition.name, ...values });
-      summary.rolesCreated++;
-    }
   }
 
   for (const categoryDefinition of serverLayout.categories) {

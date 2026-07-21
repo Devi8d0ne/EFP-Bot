@@ -1,6 +1,6 @@
 import { ChannelType, Client, GatewayIntentBits, PermissionFlagsBits } from "discord.js";
 import { config } from "./config.js";
-import { matchesDisplayName } from "./server-layout.js";
+import { matchesDisplayName, serverLayout } from "./server-layout.js";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const failures: string[] = [];
@@ -14,31 +14,36 @@ try {
   const role = (name: string) => roles.find((candidate) => candidate.name === name);
 
   const checks = [
-    { role: "@everyone", channel: "welcome", allowView: true, allowSend: false },
+    { role: "@everyone", channel: "welcome", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
     { role: "@everyone", channel: "the-opportunity", allowView: true, allowSend: false },
     { role: "@everyone", channel: "efp-jobs", allowView: true, allowSend: false },
     { role: "@everyone", channel: "lesson-01-foundation", allowView: true, allowSend: false },
-    { role: "@everyone", channel: "certification-wall", allowView: true, allowSend: false, allowReact: true },
+    { role: "@everyone", channel: "certification-wall", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false, allowReact: true },
     { role: "@everyone", channel: "recruiting-playbook", allowView: false, allowSend: false },
     { role: "@everyone", channel: "recruiting-ideas", allowView: false, allowSend: false },
     { role: "@everyone", channel: "town-square", allowView: false, allowSend: false },
     { role: "@everyone", channel: "Main Sales Floor", allowView: false, allowConnect: false },
     { role: "Agent", channel: "town-square", allowView: true, allowSend: true },
-    { role: "Agent", channel: "agent-handbook", allowView: true, allowSend: false },
+    { role: "Agent", channel: "agent-handbook", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
     { role: "Agent", channel: "recruiting-playbook", allowView: true, allowSend: false },
     { role: "Agent", channel: "Main Sales Floor", allowView: true, allowConnect: true },
     { role: "Agent", channel: "efp-daily-wall-chart", allowView: true, allowSend: false, allowReact: true },
     { role: "Agent", channel: "ADMIN OPERATIONS", allowView: false },
     { role: "Agent", channel: "LEADERSHIP OPERATIONS", allowView: false },
+    { role: "Agent", channel: "certification-review", allowView: false },
     { role: "Field Manager", channel: "LEADERSHIP OPERATIONS", allowView: false },
+    { role: "Field Manager", channel: "certification-review", allowView: false },
     { role: "Field Manager", channel: "OFFICE OPERATIONS", allowView: false },
     { role: "Field Manager", channel: "APP DATA FEEDS", allowView: false },
     { role: "General Manager", channel: "LEADERSHIP OPERATIONS", allowView: true },
+    { role: "General Manager", channel: "certification-review", allowView: true, allowSend: true },
     { role: "General Manager", channel: "OFFICE OPERATIONS", allowView: true },
     { role: "Office", channel: "OFFICE OPERATIONS", allowView: true },
     { role: "Office", channel: "LEADERSHIP OPERATIONS", allowView: true },
+    { role: "Office", channel: "certification-review", allowView: true, allowSend: true },
     { role: "Admin", channel: "ADMIN OPERATIONS", allowView: true },
     { role: "Admin", channel: "APP DATA FEEDS", allowView: true },
+    { role: "Admin", channel: "certification-review", allowView: true, allowSend: true },
   ];
 
   for (const check of checks) {
@@ -54,14 +59,49 @@ try {
       allowSend: permissions?.has(PermissionFlagsBits.SendMessages) ?? false,
       allowConnect: permissions?.has(PermissionFlagsBits.Connect) ?? false,
       allowReact: permissions?.has(PermissionFlagsBits.AddReactions) ?? false,
+      allowThreadSend: permissions?.has(PermissionFlagsBits.SendMessagesInThreads) ?? false,
+      allowCreatePublicThreads: permissions?.has(PermissionFlagsBits.CreatePublicThreads) ?? false,
+      allowCreatePrivateThreads: permissions?.has(PermissionFlagsBits.CreatePrivateThreads) ?? false,
     };
-    for (const key of ["allowView", "allowSend", "allowConnect", "allowReact"] as const) {
+    for (const key of ["allowView", "allowSend", "allowConnect", "allowReact", "allowThreadSend", "allowCreatePublicThreads", "allowCreatePrivateThreads"] as const) {
       if (check[key] !== undefined && check[key] !== actual[key]) failures.push(`${check.role} in ${check.channel}: expected ${key}=${check[key]}, got ${actual[key]}`);
     }
   }
 
   const stage = channel("EFP All Hands");
-  if (!role("EFP Certified")) failures.push("Missing EFP Certified role");
+  for (const roleName of ["Admin", "Office", "General Manager", "Field Manager", "Agent", "EFP Certified"]) {
+    if (!role(roleName)) failures.push(`Missing ${roleName} role`);
+  }
+  const forbiddenSettingsPermissions = [
+    [PermissionFlagsBits.Administrator, "Administrator"],
+    [PermissionFlagsBits.ManageGuild, "Manage Server"],
+    [PermissionFlagsBits.ManageRoles, "Manage Roles"],
+    [PermissionFlagsBits.ManageChannels, "Manage Channels"],
+    [PermissionFlagsBits.ManageWebhooks, "Manage Webhooks"],
+    [PermissionFlagsBits.ViewAuditLog, "View Audit Log"],
+    [PermissionFlagsBits.ManageMessages, "Manage Messages"],
+    [PermissionFlagsBits.ManageThreads, "Manage Threads"],
+    [PermissionFlagsBits.ManageNicknames, "Manage Nicknames"],
+    [PermissionFlagsBits.ManageGuildExpressions, "Manage Expressions"],
+    [PermissionFlagsBits.CreateGuildExpressions, "Create Expressions"],
+    [PermissionFlagsBits.ManageEvents, "Manage Events"],
+    [PermissionFlagsBits.CreateEvents, "Create Events"],
+    [PermissionFlagsBits.KickMembers, "Kick Members"],
+    [PermissionFlagsBits.BanMembers, "Ban Members"],
+    [PermissionFlagsBits.ModerateMembers, "Timeout Members"],
+  ] as const;
+  for (const roleName of ["Office", "General Manager", "Field Manager", "Agent", "EFP Certified"]) {
+    const targetRole = role(roleName);
+    if (!targetRole) continue;
+    const definition = serverLayout.roles.find((candidate) => candidate.name === roleName);
+    const expectedPermissions = (definition?.permissions ?? []).reduce((bits, permission) => bits | permission, 0n);
+    if (targetRole.permissions.bitfield !== expectedPermissions) {
+      failures.push(`${roleName} base permissions do not match the safe configured permission set`);
+    }
+    for (const [permission, label] of forbiddenSettingsPermissions) {
+      if (targetRole.permissions.has(permission, false)) failures.push(`${roleName} unexpectedly has ${label}`);
+    }
+  }
   if (stage?.type !== ChannelType.GuildStageVoice) failures.push("EFP All Hands is not a Stage channel");
   for (const name of ["ideas-and-feedback", "recruiting-ideas", "arcadia-tickets", "idt-tickets", "office-questions"]) {
     if (channel(name)?.type !== ChannelType.GuildForum) failures.push(`${name} is not a Forum channel`);

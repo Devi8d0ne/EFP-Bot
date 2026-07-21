@@ -23,13 +23,28 @@ import { matchesDisplayName } from "./server-layout.js";
 
 type AgentRegistryEntry = { name: string; email: string; credentialHash: string; active: boolean };
 type AgentLink = { agentCode: string; agentName: string; linkedAt: string };
-type TestResult = { score: string; result: string; submittedAt: string; messageId: string };
+type TestResult = {
+  score: string;
+  result: string;
+  submittedAt: string;
+  messageId: string;
+  subject?: string;
+  sourceChannelId?: string;
+  coachingAlertedAt?: string;
+};
 type AgentProgress = {
   lessons: Record<string, TestResult>;
   completedLessons: number;
   totalLessons: number;
   final?: TestResult;
+  reviewMessageId?: string;
+  reviewRequestedAt?: string;
+  coachingAssignedAt?: string;
+  coachingAssignedBy?: string;
   certifiedAt?: string;
+  certifiedBy?: string;
+  certificationRevokedAt?: string;
+  inactiveAgentRoleFlaggedAt?: string;
   announcedAt?: string;
 };
 type CertificationState = {
@@ -54,10 +69,13 @@ const WIKI_URL = "https://wiki.energyfreedomproject.site";
 const CONNECT_MODAL_ID = "efp:connect-wiki";
 export const CONNECT_BUTTON_ID = "efp:open-connect-wiki";
 export const PROGRESS_BUTTON_ID = "efp:my-progress";
+const CERTIFICATION_ACTION_PREFIX = "efp:certification";
+const OPERATIONS_ROLES = ["Admin", "Office", "General Manager"];
 const CONNECT_WINDOW_MS = 15 * 60 * 1000;
 const CONNECT_MAX_ATTEMPTS = 5;
 const connectAttempts = new Map<string, number[]>();
 let stateQueue: Promise<void> = Promise.resolve();
+const agentActionQueues = new Map<string, Promise<unknown>>();
 
 const lessons = [
   [1, "01-foundation-and-process", "Foundation and the Field Process"],
@@ -120,6 +138,23 @@ async function loadAgents(): Promise<AgentRegistryEntry[]> {
   });
 }
 
+async function findActiveAgentByCode(agentCode: string) {
+  const normalizedCode = agentCode.trim().toLowerCase();
+  const agents = await loadAgents();
+  return agents.find((agent) => agent.active && agent.credentialHash.slice(0, 8).toLowerCase() === normalizedCode);
+}
+
+async function withAgentAction<T>(agentCode: string, action: () => Promise<T>): Promise<T> {
+  const previous = agentActionQueues.get(agentCode) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(action);
+  agentActionQueues.set(agentCode, current);
+  try {
+    return await current;
+  } finally {
+    if (agentActionQueues.get(agentCode) === current) agentActionQueues.delete(agentCode);
+  }
+}
+
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
@@ -145,12 +180,50 @@ function progressFor(state: CertificationState, agentCode: string): AgentProgres
   return state.progress[agentCode] ??= { lessons: {}, completedLessons: 0, totalLessons: 9 };
 }
 
+function isCertificationEligible(progress?: AgentProgress) {
+  return Boolean(
+    progress?.final?.result === "PASS"
+    && lessons.every(([number]) => progress.lessons[String(number)]?.result === "PASS"),
+  );
+}
+
+function isCertificationApproved(progress?: AgentProgress) {
+  return Boolean(progress?.certifiedAt && !progress.certificationRevokedAt);
+}
+
+function reviewMarker(agentCode: string) {
+  return `EFP Certification Review • Agent ${agentCode}`;
+}
+
+function graduationMarker(agentCode: string) {
+  return `EFP Graduation • Agent ${agentCode}`;
+}
+
+function hasEmbedFooterMarker(message: { embeds: Array<{ footer?: { text: string } | null }> }, marker: string) {
+  return message.embeds.some((embed) => embed.footer?.text === marker);
+}
+
+function isUnknownMessageError(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === 10008);
+}
+
 function progressText(link: AgentLink, progress?: AgentProgress) {
   const passed = progress ? Object.values(progress.lessons).filter((result) => result.result === "PASS").length : 0;
   const reported = progress?.completedLessons ?? 0;
   const lessonLines = lessons.map(([number, , title]) => `${progress?.lessons[String(number)]?.result === "PASS" ? "✅" : "▫️"} ${number}. ${title}`);
   const finalStatus = progress?.final?.result === "PASS" ? "✅ Passed" : progress?.final ? `⚠️ ${progress.final.result}` : "▫️ Not submitted";
-  return `**${link.agentName}**\nAgent code: \`${link.agentCode}\`\nLesson progress reported by wiki: **${reported}/9**\nTracked passing results: **${passed}/9**\n\n${lessonLines.join("\n")}\n\n**Final certification:** ${finalStatus}\n**Certified role:** ${progress?.certifiedAt ? "✅ Granted" : "▫️ Not yet"}`;
+  const managerStatus = progress?.certificationRevokedAt
+    ? "⛔ Certification removed — contact an EFP manager"
+    : isCertificationApproved(progress)
+      ? "✅ Approved"
+      : progress?.coachingAssignedAt
+        ? "🧭 Coaching assigned"
+        : progress?.reviewMessageId
+          ? "⏳ Pending manager approval"
+          : isCertificationEligible(progress)
+            ? "⏳ Ready for manager review"
+            : "▫️ Not yet eligible";
+  return `**${link.agentName}**\nAgent code: \`${link.agentCode}\`\nLesson progress reported by wiki: **${reported}/9**\nTracked passing results: **${passed}/9**\n\n${lessonLines.join("\n")}\n\n**Final certification:** ${finalStatus}\n**Manager review:** ${managerStatus}\n**Certified role:** ${isCertificationApproved(progress) ? "✅ Granted" : "▫️ Not granted"}`;
 }
 
 export async function showConnectWikiModal(interaction: ChatInputCommandInteraction | ButtonInteraction) {
@@ -217,16 +290,13 @@ export async function handleConnectWikiModal(interaction: ModalSubmitInteraction
     await interaction.editReply("Your Discord profile is already connected to another EFP Wiki account. Ask an Admin to unlink it first.");
     return;
   }
-  const member = await interaction.guild.members.fetch(interaction.user.id);
-  const agentRole = interaction.guild.roles.cache.find((role) => role.name === "Agent");
-  if (agentRole && !member.roles.cache.has(agentRole.id)) await member.roles.add(agentRole, "Verified through EFP Wiki credentials");
-  await maybeGrantCertification(interaction.guild, agentCode);
+  await maybeRequestCertificationReview(interaction.guild, agentCode);
   connectAttempts.delete(interaction.user.id);
   const firstLesson = `${WIKI_URL}/?lesson=${lessons[0][1]}#lesson-test`;
   const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open Lesson 1").setEmoji("🎓").setURL(firstLesson),
   );
-  await interaction.editReply({ content: `Connected successfully as **${agent.name}**. Your email and ZIP were not stored.`, components: [buttons] });
+  await interaction.editReply({ content: `Connected successfully as **${agent.name}**. Your email and ZIP were not stored. This connection tracks Wiki progress only; EFP management assigns server access roles.`, components: [buttons] });
 }
 
 export async function showMyProgress(interaction: ChatInputCommandInteraction<"cached"> | ButtonInteraction<"cached">, targetUserId = interaction.user.id) {
@@ -239,24 +309,53 @@ export async function showMyProgress(interaction: ChatInputCommandInteraction<"c
   await interaction.reply({ content: progressText(link, state.progress[link.agentCode]), ephemeral: true });
 }
 
-async function sendCoachingAlert(guild: Guild, agentCode: string, subject: string, score: string, messageUrl: string) {
+async function sendCoachingAlert(guild: Guild, agentCode: string, record: TestResult) {
   const state = await readState();
   const linked = Object.entries(state.links).find(([, link]) => link.agentCode === agentCode);
   const channel = findLogicalChannel(guild, "field-coaching");
-  if (!channel || channel.type !== ChannelType.GuildText) return;
+  if (!channel || channel.type !== ChannelType.GuildText) throw new Error("field-coaching channel is not configured");
+  const marker = `EFP Coaching Alert • Result ${record.messageId}`;
+  const recent = await channel.messages.fetch({ limit: 100 });
+  if (recent.some((message) => hasEmbedFooterMarker(message, marker))) return;
   const description = linked
     ? `${linked[1].agentName} (<@${linked[0]}>) needs review before retaking this assessment.`
     : `Unlinked agent code \`${agentCode}\` needs review before retaking this assessment.`;
+  const sourceChannelId = record.sourceChannelId;
+  if (!sourceChannelId) throw new Error(`Result ${record.messageId} is missing its source channel`);
   await channel.send({
     embeds: [new EmbedBuilder()
       .setColor(0xd7ae54)
       .setTitle("Training review required")
       .setDescription(description)
-      .addFields({ name: "Assessment", value: subject.slice(0, 1024) }, { name: "Score", value: score.slice(0, 1024), inline: true })
-      .setTimestamp()],
-    components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open result").setURL(messageUrl))],
+      .addFields({ name: "Assessment", value: (record.subject ?? "EFP Wiki assessment").slice(0, 1024) }, { name: "Score", value: record.score.slice(0, 1024), inline: true })
+      .setTimestamp()
+      .setFooter({ text: marker })],
+    components: [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open result").setURL(`https://discord.com/channels/${guild.id}/${sourceChannelId}/${record.messageId}`))],
     allowedMentions: { parse: [] },
   });
+}
+
+function progressResults(progress: AgentProgress) {
+  return [...Object.values(progress.lessons), ...(progress.final ? [progress.final] : [])];
+}
+
+async function deliverPendingCoachingAlert(guild: Guild, agentCode: string, record: TestResult) {
+  await sendCoachingAlert(guild, agentCode, record);
+  await mutateState((fresh) => {
+    const current = progressFor(fresh, agentCode);
+    const stored = progressResults(current).find((candidate) => candidate.messageId === record.messageId);
+    if (stored && stored.result !== "PASS" && !stored.coachingAlertedAt) stored.coachingAlertedAt = new Date().toISOString();
+  });
+}
+
+async function retryPendingCoachingAlerts(guild: Guild) {
+  const state = await readState();
+  for (const [agentCode, progress] of Object.entries(state.progress)) {
+    for (const record of progressResults(progress)) {
+      if (record.result === "PASS" || record.coachingAlertedAt || !record.sourceChannelId) continue;
+      await deliverPendingCoachingAlert(guild, agentCode, record);
+    }
+  }
 }
 
 async function sendLessonPassMessage(guild: Guild, agentCode: string, lessonNumber: number) {
@@ -275,39 +374,225 @@ async function sendLessonPassMessage(guild: Guild, agentCode: string, lessonNumb
   await member.send({ content, components }).catch(() => undefined);
 }
 
-async function maybeGrantCertification(guild: Guild, agentCode: string) {
+function certificationActionRow(agentCode: string, disabled = false) {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`${CERTIFICATION_ACTION_PREFIX}:approve:${agentCode}`)
+      .setStyle(ButtonStyle.Success)
+      .setLabel("Approve Certification")
+      .setEmoji("🎓")
+      .setDisabled(disabled),
+    new ButtonBuilder()
+      .setCustomId(`${CERTIFICATION_ACTION_PREFIX}:coach:${agentCode}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setLabel("Assign Coaching")
+      .setEmoji("🧭")
+      .setDisabled(disabled),
+  );
+}
+
+export function isCertificationActionButton(customId: string) {
+  return new RegExp(`^${CERTIFICATION_ACTION_PREFIX}:(?:approve|coach):[a-z0-9-]{6,20}$`, "i").test(customId);
+}
+
+async function maybeRequestCertificationReview(guild: Guild, agentCode: string) {
+  return withAgentAction(agentCode, async () => {
+    const activeAgent = await findActiveAgentByCode(agentCode);
+    if (!activeAgent) return false;
+    let state = await readState();
+    let progress = state.progress[agentCode];
+    if (!progress || !isCertificationEligible(progress) || isCertificationApproved(progress)) return false;
+    const linked = Object.entries(state.links).find(([, link]) => link.agentCode === agentCode);
+    if (!linked) return false;
+    const [discordId, link] = linked;
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return false;
+    const reviewChannel = findLogicalChannel(guild, "certification-review");
+    if (!reviewChannel || reviewChannel.type !== ChannelType.GuildText) return false;
+
+    if (progress.reviewMessageId) {
+      let existing = null;
+      try {
+        existing = await reviewChannel.messages.fetch(progress.reviewMessageId);
+      } catch (error) {
+        if (!isUnknownMessageError(error)) throw error;
+      }
+      if (existing) return false;
+      await mutateState((fresh) => {
+        const current = progressFor(fresh, agentCode);
+        if (current.reviewMessageId === progress?.reviewMessageId) {
+          delete current.reviewMessageId;
+          delete current.reviewRequestedAt;
+        }
+      });
+      state = await readState();
+      progress = state.progress[agentCode];
+      if (!progress || !isCertificationEligible(progress) || isCertificationApproved(progress)) return false;
+    }
+
+    const marker = reviewMarker(agentCode);
+    const recentReviewMessages = await reviewChannel.messages.fetch({ limit: 100 });
+    const adoptableReview = recentReviewMessages.find((message) => hasEmbedFooterMarker(message, marker));
+    if (adoptableReview) {
+      await mutateState((fresh) => {
+        const current = progressFor(fresh, agentCode);
+        if (!isCertificationEligible(current) || isCertificationApproved(current)) return;
+        current.reviewMessageId = adoptableReview.id;
+        current.reviewRequestedAt ??= adoptableReview.createdAt.toISOString();
+      });
+      return false;
+    }
+
+    const resultChannel = findLogicalChannel(guild, "wiki-test-results");
+    const finalResultUrl = resultChannel && progress?.final?.messageId
+      ? `https://discord.com/channels/${guild.id}/${resultChannel.id}/${progress.final.messageId}`
+      : undefined;
+    const components = [certificationActionRow(agentCode)];
+    if (finalResultUrl) {
+      components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open Final Result").setURL(finalResultUrl),
+      ));
+    }
+    const reviewMessage = await reviewChannel.send({
+      content: `Certification review ready for <@${discordId}>.`,
+      embeds: [new EmbedBuilder()
+        .setColor(0x4e8cff)
+        .setTitle("Manager certification approval")
+        .setDescription(`The Wiki reports that **${activeAgent.name}** has nine lesson passes and a passing final assessment. These submitted results make the agent eligible for review; they do not independently verify field readiness.`)
+        .addFields(
+          { name: "Wiki identity", value: `${link.agentName}\nAgent code: \`${agentCode}\``, inline: true },
+          { name: "Wiki-reported results", value: "✅ Lessons 1–9 reported PASS\n✅ Final reported PASS", inline: true },
+          { name: "Manager field-readiness check", value: "Independently confirm the agent can apply the EFP standard in the field. Then approve certification or assign coaching." },
+        )
+        .setTimestamp()
+        .setFooter({ text: marker })],
+      components,
+      allowedMentions: { parse: [] },
+    });
+    await mutateState((fresh) => {
+      const current = progressFor(fresh, agentCode);
+      if (!isCertificationEligible(current) || isCertificationApproved(current)) return;
+      current.reviewMessageId = reviewMessage.id;
+      current.reviewRequestedAt = new Date().toISOString();
+    });
+    return true;
+  });
+}
+
+async function sendGraduationAnnouncement(guild: Guild, agentCode: string) {
   const state = await readState();
   const progress = state.progress[agentCode];
-  if (!progress || progress.final?.result !== "PASS" || progress.completedLessons < progress.totalLessons) return;
+  if (!isCertificationApproved(progress) || progress?.announcedAt) return Boolean(progress?.announcedAt);
+  const activeAgent = await findActiveAgentByCode(agentCode);
+  if (!activeAgent) return false;
   const linked = Object.entries(state.links).find(([, link]) => link.agentCode === agentCode);
-  if (!linked) return;
-  const [discordId, link] = linked;
-  const member = await guild.members.fetch(discordId).catch(() => null);
-  const certifiedRole = guild.roles.cache.find((role) => role.name === "EFP Certified");
-  if (!member || !certifiedRole) return;
-  if (!member.roles.cache.has(certifiedRole.id)) await member.roles.add(certifiedRole, "Passed all EFP Wiki lessons and final certification");
-  let shouldAnnounce = false;
-  await mutateState((fresh) => {
-    const current = progressFor(fresh, agentCode);
-    current.certifiedAt ??= new Date().toISOString();
-    if (!current.announcedAt) {
-      current.announcedAt = new Date().toISOString();
-      shouldAnnounce = true;
-    }
-  });
-  if (!shouldAnnounce) return;
+  if (!linked) throw new Error(`Agent ${agentCode} no longer has a Discord connection`);
+  const [discordId] = linked;
   const wall = findLogicalChannel(guild, "certification-wall");
-  if (wall?.type !== ChannelType.GuildText) return;
+  if (!wall || wall.type !== ChannelType.GuildText) throw new Error("certification-wall channel is not configured");
+  const marker = graduationMarker(agentCode);
+  const recentWallMessages = await wall.messages.fetch({ limit: 100 });
+  const adoptableAnnouncement = recentWallMessages.find((message) => hasEmbedFooterMarker(message, marker));
+  if (adoptableAnnouncement) {
+    await mutateState((fresh) => {
+      const current = progressFor(fresh, agentCode);
+      if (isCertificationApproved(current) && !current.announcedAt) current.announcedAt = adoptableAnnouncement.createdAt.toISOString();
+    });
+    return true;
+  }
   await wall.send({
     content: `🎓 Congratulations <@${discordId}>!`,
     embeds: [new EmbedBuilder()
       .setColor(0xe6a817)
       .setTitle("EFP CERTIFIED")
-      .setDescription(`**${link.agentName}** completed all nine EFP lessons and passed the final certification assessment.`)
+      .setDescription(`**${activeAgent.name}** completed all nine EFP lessons, passed the final certification assessment, and received manager approval.`)
       .addFields({ name: "Achievement", value: "🏆 EFP Certified", inline: true }, { name: "Next step", value: "Keep learning, apply the standard, and support the team.", inline: true })
       .setTimestamp()
-      .setFooter({ text: "Show them some love: 🎉 🔥 ⚡" })],
+      .setFooter({ text: marker })],
     allowedMentions: { users: [discordId] },
+  });
+  await mutateState((fresh) => {
+    const current = progressFor(fresh, agentCode);
+    if (isCertificationApproved(current) && !current.announcedAt) current.announcedAt = new Date().toISOString();
+  });
+  return true;
+}
+
+function isOperationsButtonMember(interaction: ButtonInteraction<"cached">) {
+  return interaction.member.roles.cache.some((role) => OPERATIONS_ROLES.includes(role.name));
+}
+
+export async function handleCertificationActionButton(interaction: ButtonInteraction<"cached">) {
+  const match = interaction.customId.match(/^efp:certification:(approve|coach):([a-z0-9-]{6,20})$/i);
+  if (!match) return;
+  const actionValue = match[1];
+  const agentCodeValue = match[2];
+  if (!actionValue || !agentCodeValue) return;
+  if (!isOperationsButtonMember(interaction)) {
+    await interaction.reply({ content: "Only Office, General Manager, or Admin can make a certification decision.", ephemeral: true });
+    return;
+  }
+  const action = actionValue.toLowerCase();
+  const agentCode = agentCodeValue.toLowerCase();
+  await interaction.deferReply({ ephemeral: true });
+  await withAgentAction(agentCode, async () => {
+    const activeAgent = await findActiveAgentByCode(agentCode);
+    if (!activeAgent) throw new Error(`Agent ${agentCode} is no longer active in the EFP Wiki registry`);
+    const state = await readState();
+    const progress = state.progress[agentCode];
+    const linked = Object.entries(state.links).find(([, link]) => link.agentCode === agentCode);
+    if (!linked) throw new Error(`Agent ${agentCode} does not have a connected Discord profile`);
+    const [discordId] = linked;
+
+    if (action === "coach") {
+      if (progress?.coachingAssignedAt) {
+        await interaction.editReply(`Coaching was already assigned to **${activeAgent.name}**.`);
+        return;
+      }
+      const coachingChannel = findLogicalChannel(interaction.guild, "field-coaching");
+      if (!coachingChannel || coachingChannel.type !== ChannelType.GuildText) throw new Error("field-coaching channel is not configured");
+      await coachingChannel.send({
+        content: `🧭 Certification coaching assigned for <@${discordId}> by <@${interaction.user.id}>.`,
+        embeds: [new EmbedBuilder()
+          .setColor(0xd7ae54)
+          .setTitle("Certification coaching assignment")
+          .setDescription(`**${activeAgent.name}** completed the assessments but needs a manager coaching check before certification approval.`)
+          .addFields({ name: "Agent code", value: `\`${agentCode}\``, inline: true }, { name: "Review", value: `[Open approval request](${interaction.message.url})`, inline: true })
+          .setTimestamp()],
+        allowedMentions: { users: [discordId, interaction.user.id] },
+      });
+      const member = await interaction.guild.members.fetch(discordId).catch(() => null);
+      await member?.send("Your EFP certification is in coaching review. A manager will follow up with you before final approval.").catch(() => undefined);
+      await mutateState((fresh) => {
+        const current = progressFor(fresh, agentCode);
+        current.coachingAssignedAt = new Date().toISOString();
+        current.coachingAssignedBy = interaction.user.id;
+      });
+      await interaction.editReply(`Coaching assigned to **${activeAgent.name}** in the field-coaching channel.`);
+      return;
+    }
+
+    if (!isCertificationEligible(progress)) {
+      await interaction.editReply(`**${activeAgent.name}** is not currently eligible. All nine distinct lesson tests and the final assessment must show PASS.`);
+      return;
+    }
+    const member = await interaction.guild.members.fetch(discordId).catch(() => null);
+    const certifiedRole = interaction.guild.roles.cache.find((role) => role.name === "EFP Certified");
+    if (!member) throw new Error(`The connected Discord member for ${activeAgent.name} is not in this server`);
+    if (!certifiedRole) throw new Error("EFP Certified role is not configured");
+    if (!member.roles.cache.has(certifiedRole.id)) {
+      await member.roles.add(certifiedRole, `Certification approved by ${interaction.user.tag}`);
+    }
+    await mutateState((fresh) => {
+      const current = progressFor(fresh, agentCode);
+      if (!current.certifiedAt) {
+        current.certifiedAt = new Date().toISOString();
+        current.certifiedBy = interaction.user.id;
+      }
+    });
+    await sendGraduationAnnouncement(interaction.guild, agentCode);
+    await interaction.message.edit({ components: [certificationActionRow(agentCode, true)] });
+    await interaction.editReply(`Certification approved for **${activeAgent.name}**. The EFP Certified role is live and the graduation wall has been updated.`);
   });
 }
 
@@ -322,16 +607,20 @@ function embedFields(message: RawWebhookMessage) {
 async function processCertificationMessage(guild: Guild, channelId: string, message: RawWebhookMessage, notify = true) {
   const { embed, values } = embedFields(message);
   const subject = embed?.title ?? "";
-  if (!embed || embed.footer?.text !== "EFP Wiki test result" || /INTEGRATION TEST/i.test(subject)) return false;
-  const agentCode = values.get("Agent code")?.trim();
+  const footer = embed?.footer?.text?.trim() ?? "";
+  if (!embed || !/^EFP Wiki (?:test )?result\b/i.test(footer) || /INTEGRATION TEST/i.test(subject)) return false;
+  const agentCode = values.get("Agent code")?.trim().toLowerCase();
   const score = values.get("Score")?.trim() ?? "Not provided";
-  const result = values.get("Result")?.trim() ?? "REVIEW REQUIRED";
+  const result = values.get("Result")?.trim().toUpperCase() ?? "REVIEW REQUIRED";
   const submittedAt = values.get("Submitted")?.trim() ?? new Date().toISOString();
   const completedRaw = values.get("Completed Lesson Tests")?.trim() ?? "0/9";
   if (!agentCode || !/^[a-z0-9-]{6,20}$/i.test(agentCode)) return false;
   const lessonMatch = subject.match(/EFP Wiki Test\s*[—-]\s*(\d+)\./i);
   const isFinal = /Final Certification/i.test(subject);
   if (!lessonMatch && !isFinal) return false;
+  const parsedLessonNumber = lessonMatch?.[1] ? Number(lessonMatch[1]) : null;
+  if (parsedLessonNumber !== null && (parsedLessonNumber < 1 || parsedLessonNumber > lessons.length)) return false;
+  if (!await findActiveAgentByCode(agentCode)) return false;
   let wasNew = false;
   let lessonNumber: number | null = null;
   await mutateState((state) => {
@@ -340,14 +629,14 @@ async function processCertificationMessage(guild: Guild, channelId: string, mess
     state.processedMessageIds = state.processedMessageIds.slice(-1000);
     const progress = progressFor(state, agentCode);
     const completed = completedRaw.match(/^(\d+)\/(\d+)$/);
-    if (completed) {
+    if (completed && Number(completed[2]) === lessons.length) {
       progress.completedLessons = Number(completed[1]);
-      progress.totalLessons = Number(completed[2]);
+      progress.totalLessons = lessons.length;
     }
     const record = { score, result, submittedAt, messageId: message.id };
     if (isFinal) progress.final = record;
-    else if (lessonMatch?.[1]) {
-      lessonNumber = Number(lessonMatch[1]);
+    else if (parsedLessonNumber !== null) {
+      lessonNumber = parsedLessonNumber;
       progress.lessons[String(lessonNumber)] = record;
     }
     wasNew = true;
@@ -355,7 +644,7 @@ async function processCertificationMessage(guild: Guild, channelId: string, mess
   if (!wasNew) return true;
   if (result === "PASS") {
     if (notify && lessonNumber) await sendLessonPassMessage(guild, agentCode, lessonNumber);
-    await maybeGrantCertification(guild, agentCode);
+    await maybeRequestCertificationReview(guild, agentCode);
   } else if (notify) {
     await sendCoachingAlert(guild, agentCode, subject, score, `https://discord.com/channels/${guild.id}/${channelId}/${message.id}`);
   }
@@ -394,11 +683,19 @@ export async function reconcileCertificationFeed(client: Client, notify = true) 
       });
     }
   }
+  const state = await readState();
+  for (const [agentCode, progress] of Object.entries(state.progress)) {
+    if (progress.certifiedAt && !progress.announcedAt) {
+      await withAgentAction(agentCode, () => sendGraduationAnnouncement(guild, agentCode));
+    } else if (isCertificationEligible(progress) && !progress.certifiedAt) {
+      await maybeRequestCertificationReview(guild, agentCode);
+    }
+  }
   return processed;
 }
 
 function isOperationsMember(interaction: ChatInputCommandInteraction<"cached">) {
-  return interaction.member.roles.cache.some((role) => ["Admin", "Office", "General Manager"].includes(role.name));
+  return interaction.member.roles.cache.some((role) => OPERATIONS_ROLES.includes(role.name));
 }
 
 export async function handleCertificationCommand(interaction: ChatInputCommandInteraction<"cached">, client: Client) {
@@ -419,12 +716,16 @@ export async function handleCertificationCommand(interaction: ChatInputCommandIn
   if (subcommand === "unlink") {
     const target = interaction.options.getUser("agent", true);
     const removed = await mutateState((state) => Boolean(state.links[target.id] && delete state.links[target.id]));
+    if (!removed) {
+      await interaction.reply({ content: `${target} was not connected. No roles were changed.`, ephemeral: true });
+      return;
+    }
     const member = await interaction.guild.members.fetch(target.id).catch(() => null);
     for (const roleName of ["Agent", "EFP Certified"]) {
       const role = interaction.guild.roles.cache.find((candidate) => candidate.name === roleName);
       if (member && role && member.roles.cache.has(role.id)) await member.roles.remove(role, "Wiki connection removed by administrator");
     }
-    await interaction.reply({ content: removed ? `Removed ${target}'s EFP Wiki connection and certification roles.` : `${target} was not connected.`, ephemeral: true });
+    await interaction.reply({ content: `Removed ${target}'s EFP Wiki connection and certification roles.`, ephemeral: true });
     return;
   }
   await interaction.deferReply({ ephemeral: true });

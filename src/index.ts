@@ -4,7 +4,9 @@ import { setupServer } from "./setup-server.js";
 import { closeTicket, openTicket } from "./tickets.js";
 import {
   handleCertificationCommand,
+  handleCertificationActionButton,
   handleConnectWikiModal,
+  isCertificationActionButton,
   isCertificationModal,
   CONNECT_BUTTON_ID,
   PROGRESS_BUTTON_ID,
@@ -38,6 +40,18 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton() && isCertificationActionButton(interaction.customId)) {
+    if (!interaction.inCachedGuild()) return;
+    try {
+      await handleCertificationActionButton(interaction);
+    } catch (error) {
+      console.error("Certification decision failed", error);
+      const message = "The certification decision failed. Please try again or alert an EFP administrator.";
+      if (interaction.deferred || interaction.replied) await interaction.editReply(message);
+      else await interaction.reply({ content: message, ephemeral: true });
+    }
+    return;
+  }
   if (interaction.isButton() && [CONNECT_BUTTON_ID, PROGRESS_BUTTON_ID].includes(interaction.customId)) {
     if (!interaction.inCachedGuild()) return;
     try {
