@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  type ButtonInteraction,
   ButtonStyle,
   ChannelType,
   Client,
@@ -51,6 +52,8 @@ const AGENTS_PATH = process.env.EFP_WIKI_AGENTS_PATH || resolve(process.cwd(), "
 const WEBHOOKS_PATH = process.env.EFP_DISCORD_WEBHOOKS_PATH || resolve(process.cwd(), ".discord-webhooks.json");
 const WIKI_URL = "https://wiki.energyfreedomproject.site";
 const CONNECT_MODAL_ID = "efp:connect-wiki";
+export const CONNECT_BUTTON_ID = "efp:open-connect-wiki";
+export const PROGRESS_BUTTON_ID = "efp:my-progress";
 const CONNECT_WINDOW_MS = 15 * 60 * 1000;
 const CONNECT_MAX_ATTEMPTS = 5;
 const connectAttempts = new Map<string, number[]>();
@@ -150,7 +153,7 @@ function progressText(link: AgentLink, progress?: AgentProgress) {
   return `**${link.agentName}**\nAgent code: \`${link.agentCode}\`\nLesson progress reported by wiki: **${reported}/9**\nTracked passing results: **${passed}/9**\n\n${lessonLines.join("\n")}\n\n**Final certification:** ${finalStatus}\n**Certified role:** ${progress?.certifiedAt ? "✅ Granted" : "▫️ Not yet"}`;
 }
 
-export async function showConnectWikiModal(interaction: ChatInputCommandInteraction) {
+export async function showConnectWikiModal(interaction: ChatInputCommandInteraction | ButtonInteraction) {
   const modal = new ModalBuilder().setCustomId(CONNECT_MODAL_ID).setTitle("Connect your EFP Wiki account");
   const email = new TextInputBuilder()
     .setCustomId("wiki-email")
@@ -226,7 +229,7 @@ export async function handleConnectWikiModal(interaction: ModalSubmitInteraction
   await interaction.editReply({ content: `Connected successfully as **${agent.name}**. Your email and ZIP were not stored.`, components: [buttons] });
 }
 
-export async function showMyProgress(interaction: ChatInputCommandInteraction<"cached">, targetUserId = interaction.user.id) {
+export async function showMyProgress(interaction: ChatInputCommandInteraction<"cached"> | ButtonInteraction<"cached">, targetUserId = interaction.user.id) {
   const state = await readState();
   const link = state.links[targetUserId];
   if (!link) {

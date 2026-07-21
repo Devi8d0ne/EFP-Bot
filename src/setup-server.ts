@@ -100,7 +100,7 @@ export async function setupServer(guild: Guild): Promise<SetupSummary> {
 
   for (const definition of serverLayout.roles) {
     const existing = guild.roles.cache.find((role) => role.name === definition.name);
-    const values = { color: definition.color, hoist: definition.hoist ?? false, mentionable: definition.mentionable ?? false, reason: "EFP server configuration" };
+    const values = { colors: { primaryColor: definition.color }, hoist: definition.hoist ?? false, mentionable: definition.mentionable ?? false, reason: "EFP server configuration" };
     if (existing) {
       await existing.edit(values);
       summary.rolesUpdated++;

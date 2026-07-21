@@ -6,6 +6,8 @@ import {
   handleCertificationCommand,
   handleConnectWikiModal,
   isCertificationModal,
+  CONNECT_BUTTON_ID,
+  PROGRESS_BUTTON_ID,
   reconcileCertificationFeed,
   showConnectWikiModal,
   showMyProgress,
@@ -36,6 +38,19 @@ client.once(Events.ClientReady, async (readyClient) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton() && [CONNECT_BUTTON_ID, PROGRESS_BUTTON_ID].includes(interaction.customId)) {
+    if (!interaction.inCachedGuild()) return;
+    try {
+      if (interaction.customId === CONNECT_BUTTON_ID) await showConnectWikiModal(interaction);
+      else await showMyProgress(interaction);
+    } catch (error) {
+      console.error("Certification button failed", error);
+      const message = "The certification action failed. Please try again or alert an EFP administrator.";
+      if (interaction.deferred || interaction.replied) await interaction.editReply(message);
+      else await interaction.reply({ content: message, ephemeral: true });
+    }
+    return;
+  }
   if (interaction.isModalSubmit() && isCertificationModal(interaction)) {
     if (!interaction.inCachedGuild()) return;
     try {
