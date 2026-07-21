@@ -31,7 +31,7 @@ try {
   const moderatorOnly = channels.find((channel) => channel?.name.toLowerCase() === "moderator-only");
   const adminCategory = channels.find((channel) => channel?.type === ChannelType.GuildCategory && channel.name.endsWith("・ADMIN OPERATIONS"));
   if (moderatorOnly && adminCategory?.type === ChannelType.GuildCategory) {
-    await moderatorOnly.setParent(adminCategory, { lockPermissions: false, reason: "Keep moderator-only in the bottom admin section" });
+    await moderatorOnly.setParent(adminCategory, { lockPermissions: true, reason: "Keep moderator-only private inside Admin Operations" });
     await moderatorOnly.setPosition(adminCategory.children.cache.size - 1, { reason: "Keep moderator-only at the bottom" });
   }
   console.log(`Removed ${deleted} legacy channels/categories.`);

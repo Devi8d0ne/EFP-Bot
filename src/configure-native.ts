@@ -22,7 +22,6 @@ try {
   const opportunity = byName("the-opportunity");
   const jobs = byName("efp-jobs");
   const incidentLog = byName("incident-log");
-  const moderatorOnly = byName("moderator-only");
   const exemptRoles = ["Admin", "Office", "General Manager", "Field Manager"]
     .map((name) => roles.find((role) => role.name === name))
     .filter((role) => role !== undefined);
@@ -31,11 +30,11 @@ try {
     description: "Energy Freedom Project sales, training, recruiting, leadership, and field operations.",
     systemChannel: welcome?.id,
     rulesChannel: rules?.id,
-    publicUpdatesChannel: incidentLog?.id,
+    publicUpdatesChannel: welcome?.id,
     reason: "Configure the EFP native Discord experience",
   });
   if (rules?.type === ChannelType.GuildText) await guild.setRulesChannel(rules, "Use the populated EFP standards channel");
-  if (moderatorOnly?.type === ChannelType.GuildText) await guild.setPublicUpdatesChannel(moderatorOnly, "Keep Community updates in the moderator channel");
+  if (welcome?.type === ChannelType.GuildText) await guild.setPublicUpdatesChannel(welcome, "Keep Community updates in the public Start Here channel");
 
   if (welcome && rules && opportunity && jobs) {
     await guild.editWelcomeScreen({

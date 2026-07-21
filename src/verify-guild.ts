@@ -44,6 +44,11 @@ try {
     { role: "Admin", channel: "ADMIN OPERATIONS", allowView: true },
     { role: "Admin", channel: "APP DATA FEEDS", allowView: true },
     { role: "Admin", channel: "certification-review", allowView: true, allowSend: true },
+    { role: "@everyone", channel: "moderator-only", allowView: false, allowSend: false },
+    { role: "Agent", channel: "moderator-only", allowView: false },
+    { role: "Office", channel: "moderator-only", allowView: false },
+    { role: "General Manager", channel: "moderator-only", allowView: false },
+    { role: "Admin", channel: "moderator-only", allowView: true, allowSend: true },
   ];
 
   for (const check of checks) {
@@ -69,6 +74,8 @@ try {
   }
 
   const stage = channel("EFP All Hands");
+  const welcome = channel("welcome");
+  if (!welcome || guild.publicUpdatesChannelId !== welcome.id) failures.push("Community updates channel is not welcome");
   for (const roleName of ["Admin", "Office", "General Manager", "Field Manager", "Agent", "EFP Certified"]) {
     if (!role(roleName)) failures.push(`Missing ${roleName} role`);
   }
