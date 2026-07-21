@@ -1,6 +1,7 @@
 import { ChannelType } from "discord.js";
 
-const MEMBER_ROLES = ["Admin", "Office", "General Manager", "Field Manager", "Agent"];
+const MEMBER_ROLES = ["Admin", "Office", "General Manager", "Agent"];
+const OPERATIONS_ROLES = ["Admin", "Office", "General Manager"];
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   "START HERE": "👋",
@@ -22,6 +23,7 @@ export function displayCategoryName(name: string) {
 }
 
 export function displayChannelName(definition: ChannelDefinition) {
+  if (definition.name === "efp-daily-wall-chart") return "🏆・efp-daily-wall-chart";
   const type = definition.type ?? ChannelType.GuildText;
   const emoji = type === ChannelType.GuildAnnouncement
     ? "📣"
@@ -76,10 +78,10 @@ export const serverLayout: {
     {
       name: "START HERE",
       channels: [
-        { name: "welcome", topic: "Start here: what EFP is and how this server works.", readOnly: true, postAs: ["Admin", "Field Manager"] },
+        { name: "welcome", topic: "Start here: what EFP is and how this server works.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "rules-and-standards", topic: "EFP conduct, security, and operating standards.", readOnly: true, postAs: ["Admin"] },
         { name: "announcements", type: ChannelType.GuildAnnouncement, topic: "Official EFP news and operational announcements.", readOnly: true, postAs: ["Admin", "General Manager"] },
-        { name: "choose-your-path", topic: "Where agents, managers, office staff, and partners should go next.", readOnly: true, postAs: ["Admin", "Field Manager"] },
+        { name: "choose-your-path", topic: "Where agents, managers, office staff, and partners should go next.", readOnly: true, postAs: OPERATIONS_ROLES },
       ],
     },
     {
@@ -95,11 +97,11 @@ export const serverLayout: {
     {
       name: "RECRUITING CENTER",
       channels: [
-        { name: "the-opportunity", topic: "Forward-facing EFP recruiting message: direct field sales, training, performance, and growth.", readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
-        { name: "who-fits-here", topic: "What EFP looks for: coachable, reliable, confident, mobile, team-minded, and growth-focused people.", readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
-        { name: "recruiting-links", topic: "Approved EFP application pages and personalized recruiter links to share externally.", readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
-        { name: "efp-jobs", topic: "Interested in joining EFP? Review the opportunity and apply through the approved EFP recruiting page.", readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
-        { name: "recruiting-playbook", topic: "Internal guidance for explaining the opportunity honestly, sharing the correct link, and setting clear expectations.", privateTo: MEMBER_ROLES, readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
+        { name: "the-opportunity", topic: "Forward-facing EFP recruiting message: direct field sales, training, performance, and growth.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "who-fits-here", topic: "What EFP looks for: coachable, reliable, confident, mobile, team-minded, and growth-focused people.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "recruiting-links", topic: "Approved EFP application pages and personalized recruiter links to share externally.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "efp-jobs", topic: "Interested in joining EFP? Review the opportunity and apply through the approved EFP recruiting page.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "recruiting-playbook", topic: "Internal guidance for explaining the opportunity honestly, sharing the correct link, and setting clear expectations.", privateTo: MEMBER_ROLES, readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "recruiting-ideas", type: ChannelType.GuildForum, topic: "Discuss recruiting campaigns, outreach ideas, and improvements without posting candidate personal information.", privateTo: MEMBER_ROLES, tags: ["Campaign", "Content", "Referral", "Event", "Idea"] },
       ],
     },
@@ -107,31 +109,30 @@ export const serverLayout: {
       name: "AGENT HUB",
       privateTo: MEMBER_ROLES,
       channels: [
-        { name: "agent-handbook", topic: "Processes, expectations, and the agent operating guide.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "sales-playbook", topic: "Talk tracks, objections, discovery, and closing guidance.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "resources-and-links", topic: "Approved tools, forms, references, and training links.", readOnly: true, postAs: ["Admin", "Field Manager"] },
+        { name: "agent-handbook", topic: "Processes, expectations, and the agent operating guide.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "sales-playbook", topic: "Talk tracks, objections, discovery, and closing guidance.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "resources-and-links", topic: "Approved tools, forms, references, and training links.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "agent-questions", topic: "Ask the team questions and receive real-time help." },
         { name: "field-intelligence", topic: "Share market observations and useful lessons from the field." },
       ],
     },
     {
       name: "TRAINING & CERTIFICATION",
-      privateTo: MEMBER_ROLES,
       channels: [
-        { name: "certification-roadmap", topic: "Nine coached lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-01-foundation", topic: "Lesson 1 copy, audio, and Foundation and Field Process test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-02-psychology", topic: "Lesson 2 copy, audio, and Psychology and Reclosing test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-03-arcadia", topic: "Lesson 3 copy, audio, and Arcadia Community Solar test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-04-idt", topic: "Lesson 4 copy, audio, and IDT Offer and Disclosure test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-05-transitions", topic: "Lesson 5 copy, audio, and Transitions, Contentions, and Referrals test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-06-lmi-validation", topic: "Lesson 6 copy, audio, and LMI Document Validation test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-07-bill-validation", topic: "Lesson 7 copy, audio, and Utility Bill Validation test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-08-field-standards", topic: "Lesson 8 copy, audio, and Field Standards and Certification test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "lesson-09-rebuttals", topic: "Lesson 9 copy, audio, and Rebuttal Frameworks and Reclosing test.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "field-process-and-reclosing", topic: "The seven-stage process, two closes, psychology, rebuttals, transitions, and referrals.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "arcadia-community-solar", topic: "Arcadia qualification, approved language, enrollment, processing, activation, and support.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "idt-offer-and-disclosures", topic: "IDT offer language, current disclosures, verification, and customer authorization.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
-        { name: "document-validation", topic: "LMI proof and utility-bill validation standards. Never post customer documents here.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
+        { name: "certification-roadmap", topic: "Nine coached lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-01-foundation", topic: "Lesson 1 copy, audio, and Foundation and Field Process test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-02-psychology", topic: "Lesson 2 copy, audio, and Psychology and Reclosing test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-03-arcadia", topic: "Lesson 3 copy, audio, and Arcadia Community Solar test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-04-idt", topic: "Lesson 4 copy, audio, and IDT Offer and Disclosure test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-05-transitions", topic: "Lesson 5 copy, audio, and Transitions, Contentions, and Referrals test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-06-lmi-validation", topic: "Lesson 6 copy, audio, and LMI Document Validation test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-07-bill-validation", topic: "Lesson 7 copy, audio, and Utility Bill Validation test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-08-field-standards", topic: "Lesson 8 copy, audio, and Field Standards and Certification test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-09-rebuttals", topic: "Lesson 9 copy, audio, and Rebuttal Frameworks and Reclosing test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "field-process-and-reclosing", topic: "The seven-stage process, two closes, psychology, rebuttals, transitions, and referrals.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "arcadia-community-solar", topic: "Arcadia qualification, approved language, enrollment, processing, activation, and support.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "idt-offer-and-disclosures", topic: "IDT offer language, current disclosures, verification, and customer authorization.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "document-validation", topic: "LMI proof and utility-bill validation standards. Never post customer documents here.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "roleplay-and-coaching", topic: "Practice talks, receive corrections, and prepare for coach sign-off." },
         { name: "training-questions", topic: "Ask before you guess about campaign terms, instructions, or documents." },
       ],
@@ -144,12 +145,13 @@ export const serverLayout: {
         { name: "morning-huddle", topic: "Daily product focus, compliance reminder, roleplay, and territory plan." },
         { name: "midday-check", topic: "Field observations, direct corrections, and clean restarts." },
         { name: "end-of-day-review", topic: "Enrollment review, issue log, scorecard, and coaching notes." },
+        { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "weekly-leadership", topic: "Progress review, retraining assignments, recruiting, and leadership development." },
         { name: "meeting-agenda", topic: "Agendas, speaker order, and meeting preparation." },
-        { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: ["Admin", "General Manager", "Field Manager"] },
+        { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "Main Sales Floor", type: ChannelType.GuildVoice },
         { name: "EFP All Hands", type: ChannelType.GuildStageVoice },
-        { name: "Speakers Room", type: ChannelType.GuildVoice, privateTo: ["Admin", "General Manager", "Field Manager"] },
+        { name: "Speakers Room", type: ChannelType.GuildVoice, privateTo: OPERATIONS_ROLES },
         { name: "Breakout Room 1", type: ChannelType.GuildVoice },
         { name: "Breakout Room 2", type: ChannelType.GuildVoice },
       ],
@@ -158,7 +160,7 @@ export const serverLayout: {
       name: "TICKETS & LIVE SUPPORT",
       privateTo: MEMBER_ROLES,
       channels: [
-        { name: "ticket-guide", topic: "How to submit a useful ticket and when to use live support.", readOnly: true, postAs: ["Admin", "Field Manager"] },
+        { name: "ticket-guide", topic: "How to submit a useful ticket and when to use live support.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "arcadia-tickets", type: ChannelType.GuildForum, topic: "Submit and track Arcadia Community Solar questions and issues. Do not post customer documents or account numbers.", tags: ["Enrollment", "Qualification", "Activation", "Tech Support", "Resolved"] },
         { name: "idt-tickets", type: ChannelType.GuildForum, topic: "Submit and track IDT offer, disclosure, TPV, and enrollment questions. Do not post customer documents or account numbers.", tags: ["Offer", "Disclosure", "TPV", "Enrollment", "Resolved"] },
         { name: "office-questions", type: ChannelType.GuildForum, topic: "Agent office questions about badges, access, paperwork, and general administration. Send private commission or payroll details directly to Office/Admin.", tags: ["Badge", "Access", "Paperwork", "Commission", "Payroll", "General"] },
@@ -180,7 +182,7 @@ export const serverLayout: {
     },
     {
       name: "LEADERSHIP OPERATIONS",
-      privateTo: ["Admin", "General Manager", "Field Manager"],
+      privateTo: OPERATIONS_ROLES,
       channels: [
         { name: "manager-briefing", topic: "Read-only leadership priorities, decisions, and weekly direction.", readOnly: true, postAs: ["Admin", "General Manager"] },
         { name: "field-coaching", topic: "Agent coaching plans, roleplay priorities, observations, and retraining assignments." },
@@ -202,16 +204,16 @@ export const serverLayout: {
     },
     {
       name: "TICKET ARCHIVE",
-      privateTo: ["Admin", "Office", "General Manager", "Field Manager"],
+      privateTo: OPERATIONS_ROLES,
       channels: [
-        { name: "archive-guide", topic: "Closed office tickets are moved into this private category.", readOnly: true, postAs: ["Admin", "Office", "General Manager", "Field Manager"] },
+        { name: "archive-guide", topic: "Closed office tickets are moved into this private category.", readOnly: true, postAs: OPERATIONS_ROLES },
       ],
     },
     {
       name: "APP DATA FEEDS",
-      privateTo: ["Admin", "Office", "General Manager", "Field Manager"],
+      privateTo: OPERATIONS_ROLES,
       channels: [
-        { name: "wiki-test-results", topic: "Automated lesson, final-certification, and training results from the EFP wiki.", privateTo: ["Admin", "General Manager", "Field Manager"] },
+        { name: "wiki-test-results", topic: "Automated lesson, final-certification, and training results from the EFP wiki.", privateTo: OPERATIONS_ROLES },
         { name: "sales-tracker-feed", topic: "Automated end-of-day Community Solar, deregulation, and commission-estimate reports.", privateTo: ["Admin", "Office", "General Manager"] },
         { name: "recruiting-site-feed", topic: "Automated candidate and recruiting-site submissions.", privateTo: ["Admin", "Office", "General Manager"] },
         { name: "integration-alerts", topic: "Delivery failures and health alerts from connected EFP applications.", privateTo: ["Admin"] },
@@ -223,5 +225,6 @@ export const serverLayout: {
 export const webhookFeeds = [
   { key: "wikiTest", channel: "wiki-test-results", name: "EFP Wiki Test Results" },
   { key: "salesTracker", channel: "sales-tracker-feed", name: "EFP Sales Tracker" },
+  { key: "dailyWallChart", channel: "efp-daily-wall-chart", name: "EFP Daily Wall Chart" },
   { key: "recruitingSites", channel: "recruiting-site-feed", name: "EFP Recruiting Sites" },
 ] as const;
