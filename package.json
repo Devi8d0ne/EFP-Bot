@@ -23,6 +23,8 @@
     "setup:lessons": "tsx src/seed-lessons.ts"
     ,"cleanup:legacy": "tsx src/cleanup-legacy.ts"
     ,"inspect:certification": "tsx src/inspect-certification-feed.ts"
+    ,"cleanup:redundant-channels": "tsx src/remove-redundant-channels.ts"
+    ,"inspect:app-feeds": "tsx src/inspect-app-feeds.ts"
     ,"setup:certification": "tsx src/seed-certification.ts"
   },
   "engines": {

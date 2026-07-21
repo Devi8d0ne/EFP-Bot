@@ -59,10 +59,13 @@ function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivate
           PermissionFlagsBits.ReadMessageHistory,
           ...(!definition.readOnly
             ? [
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.SendMessagesInThreads,
-                PermissionFlagsBits.CreatePublicThreads,
-                PermissionFlagsBits.CreatePrivateThreads,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.SendMessagesInThreads,
+              PermissionFlagsBits.CreatePublicThreads,
+              PermissionFlagsBits.CreatePrivateThreads,
+              ...(definition.allowAttachments
+                ? [PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks]
+                : []),
               ]
             : []),
         ],
@@ -104,6 +107,13 @@ function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivate
       if (everyone) everyone.allow = [...(everyone.allow ?? []), PermissionFlagsBits.AddReactions];
       else values.push({ id: guild.roles.everyone.id, allow: [PermissionFlagsBits.AddReactions] });
     }
+  }
+
+  if (definition.allowAttachments && !privateTo) {
+    const everyone = values.find((value) => value.id === guild.roles.everyone.id);
+    const permissions = [PermissionFlagsBits.AttachFiles, PermissionFlagsBits.EmbedLinks];
+    if (everyone) everyone.allow = [...(everyone.allow ?? []), ...permissions];
+    else values.push({ id: guild.roles.everyone.id, allow: permissions });
   }
 
   return values;

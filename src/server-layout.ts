@@ -42,6 +42,7 @@ export function displayCategoryName(name: string) {
 export function displayChannelName(definition: ChannelDefinition) {
   if (definition.name === "efp-daily-wall-chart") return "🏆・efp-daily-wall-chart";
   if (definition.name === "certification-wall") return "🎓・certification-wall";
+  if (definition.name === "live-sales-drops") return "📸・live-sales-drops";
   const type = definition.type ?? ChannelType.GuildText;
   const emoji = type === ChannelType.GuildAnnouncement
     ? "📣"
@@ -80,6 +81,7 @@ export type ChannelDefinition = {
   privateTo?: string[];
   postAs?: string[];
   allowReactions?: boolean;
+  allowAttachments?: boolean;
   tags?: string[];
 };
 
@@ -201,12 +203,13 @@ export const serverLayout: {
       privateTo: MEMBER_ROLES,
       channels: [
         { name: "floor-chat", topic: "Live coordination while the sales floor is operating." },
-        { name: "morning-huddle", topic: "Daily product focus, compliance reminder, roleplay, and territory plan." },
-        { name: "midday-check", topic: "Field observations, direct corrections, and clean restarts." },
-        { name: "end-of-day-review", topic: "Enrollment review, issue log, scorecard, and coaching notes." },
+        {
+          name: "live-sales-drops",
+          topic: "Post sale-complete screenshots and a short running count so the team can celebrate wins in real time.",
+          allowReactions: true,
+          allowAttachments: true,
+        },
         { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
-        { name: "weekly-leadership", topic: "Progress review, retraining assignments, recruiting, and leadership development." },
-        { name: "meeting-agenda", topic: "Agendas, speaker order, and meeting preparation." },
         { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "Main Sales Floor", type: ChannelType.GuildVoice },
         { name: "EFP All Hands", type: ChannelType.GuildStageVoice },
@@ -258,7 +261,6 @@ export const serverLayout: {
         { name: "office-desk", topic: "Internal office coordination and administrative follow-through." },
         { name: "commissions-review", topic: "Restricted commission questions, corrections, and status review." },
         { name: "badges-and-access", topic: "Badge issuance, system access, onboarding paperwork, and equipment tracking." },
-        { name: "candidate-review", topic: "Private applicant review and recruiting follow-up. Protect candidate personal information." },
         { name: "Office Room", type: ChannelType.GuildVoice },
       ],
     },

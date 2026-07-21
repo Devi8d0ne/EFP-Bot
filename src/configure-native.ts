@@ -22,6 +22,7 @@ try {
   const opportunity = byName("the-opportunity");
   const jobs = byName("efp-jobs");
   const incidentLog = byName("incident-log");
+  const adminCommand = byName("admin-command");
   const exemptRoles = ["Admin", "Office", "General Manager", "Field Manager"]
     .map((name) => roles.find((role) => role.name === name))
     .filter((role) => role !== undefined);
@@ -30,11 +31,11 @@ try {
     description: "Energy Freedom Project sales, training, recruiting, leadership, and field operations.",
     systemChannel: welcome?.id,
     rulesChannel: rules?.id,
-    publicUpdatesChannel: welcome?.id,
+    publicUpdatesChannel: adminCommand?.id,
     reason: "Configure the EFP native Discord experience",
   });
   if (rules?.type === ChannelType.GuildText) await guild.setRulesChannel(rules, "Use the populated EFP standards channel");
-  if (welcome?.type === ChannelType.GuildText) await guild.setPublicUpdatesChannel(welcome, "Keep Community updates in the public Start Here channel");
+  if (adminCommand?.type === ChannelType.GuildText) await guild.setPublicUpdatesChannel(adminCommand, "Keep Discord Community notices in Admin Command");
 
   if (welcome && rules && opportunity && jobs) {
     await guild.editWelcomeScreen({

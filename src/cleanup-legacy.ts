@@ -6,7 +6,17 @@ try {
   await client.login(config.token);
   const guild = await client.guilds.fetch(config.guildId);
   let channels = await guild.channels.fetch();
-  const legacyNames = new Set(["general", "rules"]);
+  const legacyNames = new Set([
+    "general",
+    "rules",
+    "morning-huddle",
+    "midday-check",
+    "end-of-day-review",
+    "weekly-leadership",
+    "meeting-agenda",
+    "candidate-review",
+    "office-ticket-desk",
+  ]);
   let deleted = 0;
   for (const channel of channels.values()) {
     if (!channel || !legacyNames.has(channel.name.toLowerCase())) continue;

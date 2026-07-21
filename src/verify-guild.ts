@@ -27,6 +27,8 @@ try {
     { role: "Agent", channel: "agent-handbook", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
     { role: "Agent", channel: "recruiting-playbook", allowView: true, allowSend: false },
     { role: "Agent", channel: "Main Sales Floor", allowView: true, allowConnect: true },
+    { role: "@everyone", channel: "live-sales-drops", allowView: false, allowSend: false },
+    { role: "Agent", channel: "live-sales-drops", allowView: true, allowSend: true, allowAttach: true, allowReact: true },
     { role: "Agent", channel: "efp-daily-wall-chart", allowView: true, allowSend: false, allowReact: true },
     { role: "Agent", channel: "ADMIN OPERATIONS", allowView: false },
     { role: "Agent", channel: "LEADERSHIP OPERATIONS", allowView: false },
@@ -44,11 +46,6 @@ try {
     { role: "Admin", channel: "ADMIN OPERATIONS", allowView: true },
     { role: "Admin", channel: "APP DATA FEEDS", allowView: true },
     { role: "Admin", channel: "certification-review", allowView: true, allowSend: true },
-    { role: "@everyone", channel: "moderator-only", allowView: false, allowSend: false },
-    { role: "Agent", channel: "moderator-only", allowView: false },
-    { role: "Office", channel: "moderator-only", allowView: false },
-    { role: "General Manager", channel: "moderator-only", allowView: false },
-    { role: "Admin", channel: "moderator-only", allowView: true, allowSend: true },
   ];
 
   for (const check of checks) {
@@ -64,18 +61,19 @@ try {
       allowSend: permissions?.has(PermissionFlagsBits.SendMessages) ?? false,
       allowConnect: permissions?.has(PermissionFlagsBits.Connect) ?? false,
       allowReact: permissions?.has(PermissionFlagsBits.AddReactions) ?? false,
+      allowAttach: permissions?.has(PermissionFlagsBits.AttachFiles) ?? false,
       allowThreadSend: permissions?.has(PermissionFlagsBits.SendMessagesInThreads) ?? false,
       allowCreatePublicThreads: permissions?.has(PermissionFlagsBits.CreatePublicThreads) ?? false,
       allowCreatePrivateThreads: permissions?.has(PermissionFlagsBits.CreatePrivateThreads) ?? false,
     };
-    for (const key of ["allowView", "allowSend", "allowConnect", "allowReact", "allowThreadSend", "allowCreatePublicThreads", "allowCreatePrivateThreads"] as const) {
+    for (const key of ["allowView", "allowSend", "allowConnect", "allowReact", "allowAttach", "allowThreadSend", "allowCreatePublicThreads", "allowCreatePrivateThreads"] as const) {
       if (check[key] !== undefined && check[key] !== actual[key]) failures.push(`${check.role} in ${check.channel}: expected ${key}=${check[key]}, got ${actual[key]}`);
     }
   }
 
   const stage = channel("EFP All Hands");
-  const welcome = channel("welcome");
-  if (!welcome || guild.publicUpdatesChannelId !== welcome.id) failures.push("Community updates channel is not welcome");
+  const adminCommand = channel("admin-command");
+  if (!adminCommand || guild.publicUpdatesChannelId !== adminCommand.id) failures.push("Community updates channel is not admin-command");
   for (const roleName of ["Admin", "Office", "General Manager", "Field Manager", "Agent", "EFP Certified"]) {
     if (!role(roleName)) failures.push(`Missing ${roleName} role`);
   }
