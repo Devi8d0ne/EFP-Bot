@@ -2,18 +2,80 @@ import { Client, Events, GatewayIntentBits, PermissionFlagsBits } from "discord.
 import { config } from "./config.js";
 import { setupServer } from "./setup-server.js";
 import { closeTicket, openTicket } from "./tickets.js";
+import {
+  handleCertificationCommand,
+  handleConnectWikiModal,
+  isCertificationModal,
+  reconcileCertificationFeed,
+  showConnectWikiModal,
+  showMyProgress,
+} from "./certification.js";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+let certificationPollRunning = false;
 
-client.once(Events.ClientReady, (readyClient) => {
+client.once(Events.ClientReady, async (readyClient) => {
   console.log(`EFP Bot ready as ${readyClient.user.tag}`);
+  try {
+    const processed = await reconcileCertificationFeed(client, false);
+    console.log(`Certification feed reconciled: ${processed} recent result messages reviewed.`);
+  } catch (error) {
+    console.error("Certification startup reconciliation failed", error);
+  }
+  setInterval(async () => {
+    if (certificationPollRunning) return;
+    certificationPollRunning = true;
+    try {
+      await reconcileCertificationFeed(client, true);
+    } catch (error) {
+      console.error("Certification feed poll failed", error);
+    } finally {
+      certificationPollRunning = false;
+    }
+  }, 15_000);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isModalSubmit() && isCertificationModal(interaction)) {
+    if (!interaction.inCachedGuild()) return;
+    try {
+      await handleConnectWikiModal(interaction);
+    } catch (error) {
+      console.error("Wiki connection failed", error);
+      const message = "The Wiki connection failed. Please try again or alert an EFP administrator.";
+      if (interaction.deferred || interaction.replied) await interaction.editReply(message);
+      else await interaction.reply({ content: message, ephemeral: true });
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand() || !interaction.inGuild()) return;
 
   if (interaction.commandName === "ping") {
     await interaction.reply({ content: "EFP Bot is online.", ephemeral: true });
+    return;
+  }
+
+  if (interaction.commandName === "connect-wiki") {
+    await showConnectWikiModal(interaction);
+    return;
+  }
+
+  if (interaction.commandName === "my-progress") {
+    if (!interaction.inCachedGuild()) return;
+    await showMyProgress(interaction);
+    return;
+  }
+
+  if (interaction.commandName === "certification") {
+    if (!interaction.inCachedGuild()) return;
+    try {
+      await handleCertificationCommand(interaction, client);
+    } catch (error) {
+      console.error("Certification command failed", error);
+      const message = "The certification action failed. Please alert an EFP administrator.";
+      if (interaction.deferred || interaction.replied) await interaction.editReply(message);
+      else await interaction.reply({ content: message, ephemeral: true });
+    }
     return;
   }
 

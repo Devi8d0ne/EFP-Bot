@@ -22,6 +22,7 @@
     ,"setup:wiki-links": "tsx src/seed-wiki-links.ts",
     "setup:lessons": "tsx src/seed-lessons.ts"
     ,"cleanup:legacy": "tsx src/cleanup-legacy.ts"
+    ,"inspect:certification": "tsx src/inspect-certification-feed.ts"
   },
   "engines": {
     "node": ">=20"

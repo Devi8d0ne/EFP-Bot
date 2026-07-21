@@ -24,6 +24,7 @@ export function displayCategoryName(name: string) {
 
 export function displayChannelName(definition: ChannelDefinition) {
   if (definition.name === "efp-daily-wall-chart") return "🏆・efp-daily-wall-chart";
+  if (definition.name === "certification-wall") return "🎓・certification-wall";
   const type = definition.type ?? ChannelType.GuildText;
   const emoji = type === ChannelType.GuildAnnouncement
     ? "📣"
@@ -57,6 +58,7 @@ export type ChannelDefinition = {
   readOnly?: boolean;
   privateTo?: string[];
   postAs?: string[];
+  allowReactions?: boolean;
   tags?: string[];
 };
 
@@ -72,8 +74,9 @@ export const serverLayout: {
   roles: RoleDefinition[];
   categories: CategoryDefinition[];
 } = {
-  // Roles already exist in Discord and remain administrator-assigned.
-  roles: [],
+  roles: [
+    { name: "EFP Certified", color: 0xe6a817, hoist: true, mentionable: false },
+  ],
   categories: [
     {
       name: "START HERE",
@@ -120,6 +123,7 @@ export const serverLayout: {
       name: "TRAINING & CERTIFICATION",
       channels: [
         { name: "certification-roadmap", topic: "Nine coached lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "certification-wall", topic: "Celebrate agents who complete all nine lesson tests and pass final EFP certification.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
         { name: "lesson-01-foundation", topic: "Lesson 1 copy, audio, and Foundation and Field Process test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-02-psychology", topic: "Lesson 2 copy, audio, and Psychology and Reclosing test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-03-arcadia", topic: "Lesson 3 copy, audio, and Arcadia Community Solar test.", readOnly: true, postAs: OPERATIONS_ROLES },
@@ -145,7 +149,7 @@ export const serverLayout: {
         { name: "morning-huddle", topic: "Daily product focus, compliance reminder, roleplay, and territory plan." },
         { name: "midday-check", topic: "Field observations, direct corrections, and clean restarts." },
         { name: "end-of-day-review", topic: "Enrollment review, issue log, scorecard, and coaching notes." },
-        { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
         { name: "weekly-leadership", topic: "Progress review, retraining assignments, recruiting, and leadership development." },
         { name: "meeting-agenda", topic: "Agendas, speaker order, and meeting preparation." },
         { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: OPERATIONS_ROLES },

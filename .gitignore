@@ -4,4 +4,5 @@ dist/
 .discord-webhooks.json
 *.log
 .bot-dev.pid
+.data/
 .DS_Store

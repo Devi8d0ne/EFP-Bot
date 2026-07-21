@@ -1,6 +1,6 @@
 import { ChannelType, Guild, PermissionFlagsBits, type ChatInputCommandInteraction, type TextChannel } from "discord.js";
 
-const STAFF_ROLES = ["Admin", "Office", "General Manager", "Field Manager"];
+const STAFF_ROLES = ["Admin", "Office", "General Manager"];
 const TICKET_MARKER = "EFP_OFFICE_TICKET";
 
 function safeName(value: string) {

@@ -30,6 +30,20 @@ is only a server-management bridge; the deployed sites deliver their own notific
 Run `npm run setup:lessons` locally after `setup:guild` to copy all nine complete lesson
 scripts into their Discord channels and pin the matching hosted MP3 and wiki-test links.
 
+## Wiki identity and certification
+
+Agents run `/connect-wiki` and privately enter the same email and ZIP used by the Wiki.
+The bot checks the SHA-256 credential hash against the sibling `efp-wiki/src/agents.js`
+registry, then discards the submitted email and ZIP. Persistent links and progress are
+stored in the ignored `.data/certification.json` file. Set `EFP_WIKI_AGENTS_PATH` or
+`EFP_CERTIFICATION_DATA_PATH` only when the deployed folder layout differs. The bot polls
+the private result feed and authenticates through its own ignored webhook configuration,
+so Discord's privileged Message Content intent is not required.
+
+Wiki test-result webhook messages update progress automatically. Passing all nine lesson
+tests and the final assessment grants `EFP Certified` and posts to the certification wall.
+Use `/my-progress` for self-service status and `/certification` for management actions.
+
 `npm run cleanup:legacy` removes the unused default general/rules placeholders and their
 empty default categories after native Community settings point to the real EFP channels.
 It keeps `moderator-only` and moves it to the bottom.

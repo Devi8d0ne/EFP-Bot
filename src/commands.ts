@@ -7,6 +7,28 @@ export const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   new SlashCommandBuilder().setName("ping").setDescription("Check whether EFP Bot is online"),
   new SlashCommandBuilder()
+    .setName("connect-wiki")
+    .setDescription("Privately connect your Discord profile to your EFP Wiki account"),
+  new SlashCommandBuilder()
+    .setName("my-progress")
+    .setDescription("View your linked EFP Wiki certification progress"),
+  new SlashCommandBuilder()
+    .setName("certification")
+    .setDescription("View or manage EFP certification connections")
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("status")
+        .setDescription("View certification progress")
+        .addUserOption((option) => option.setName("agent").setDescription("Agent to review; leave blank for yourself")),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("unlink")
+        .setDescription("Admin: remove an agent's wiki connection")
+        .addUserOption((option) => option.setName("agent").setDescription("Connected Discord member").setRequired(true)),
+    )
+    .addSubcommand((subcommand) => subcommand.setName("reconcile").setDescription("Admin: recheck recent wiki test-result messages")),
+  new SlashCommandBuilder()
     .setName("ticket")
     .setDescription("Open or close a private EFP office ticket")
     .addSubcommand((subcommand) =>

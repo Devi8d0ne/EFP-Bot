@@ -52,6 +52,22 @@ function overwrites(guild: Guild, definition: ChannelDefinition, categoryPrivate
     }
   }
 
+  if (definition.allowReactions) {
+    if (privateTo) {
+      for (const roleName of privateTo) {
+        const role = guild.roles.cache.find((candidate) => candidate.name === roleName);
+        if (!role) throw new Error(`Role not found while configuring reactions: ${roleName}`);
+        const existing = values.find((value) => value.id === role.id);
+        if (existing) existing.allow = [...(existing.allow ?? []), PermissionFlagsBits.AddReactions];
+        else values.push({ id: role.id, allow: [PermissionFlagsBits.AddReactions] });
+      }
+    } else {
+      const everyone = values.find((value) => value.id === guild.roles.everyone.id);
+      if (everyone) everyone.allow = [...(everyone.allow ?? []), PermissionFlagsBits.AddReactions];
+      else values.push({ id: guild.roles.everyone.id, allow: [PermissionFlagsBits.AddReactions] });
+    }
+  }
+
   return values;
 }
 

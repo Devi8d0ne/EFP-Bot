@@ -18,6 +18,7 @@ try {
     { role: "@everyone", channel: "the-opportunity", allowView: true, allowSend: false },
     { role: "@everyone", channel: "efp-jobs", allowView: true, allowSend: false },
     { role: "@everyone", channel: "lesson-01-foundation", allowView: true, allowSend: false },
+    { role: "@everyone", channel: "certification-wall", allowView: true, allowSend: false, allowReact: true },
     { role: "@everyone", channel: "recruiting-playbook", allowView: false, allowSend: false },
     { role: "@everyone", channel: "recruiting-ideas", allowView: false, allowSend: false },
     { role: "@everyone", channel: "town-square", allowView: false, allowSend: false },
@@ -26,7 +27,7 @@ try {
     { role: "Agent", channel: "agent-handbook", allowView: true, allowSend: false },
     { role: "Agent", channel: "recruiting-playbook", allowView: true, allowSend: false },
     { role: "Agent", channel: "Main Sales Floor", allowView: true, allowConnect: true },
-    { role: "Agent", channel: "efp-daily-wall-chart", allowView: true, allowSend: false },
+    { role: "Agent", channel: "efp-daily-wall-chart", allowView: true, allowSend: false, allowReact: true },
     { role: "Agent", channel: "ADMIN OPERATIONS", allowView: false },
     { role: "Agent", channel: "LEADERSHIP OPERATIONS", allowView: false },
     { role: "Field Manager", channel: "LEADERSHIP OPERATIONS", allowView: false },
@@ -52,13 +53,15 @@ try {
       allowView: permissions?.has(PermissionFlagsBits.ViewChannel) ?? false,
       allowSend: permissions?.has(PermissionFlagsBits.SendMessages) ?? false,
       allowConnect: permissions?.has(PermissionFlagsBits.Connect) ?? false,
+      allowReact: permissions?.has(PermissionFlagsBits.AddReactions) ?? false,
     };
-    for (const key of ["allowView", "allowSend", "allowConnect"] as const) {
+    for (const key of ["allowView", "allowSend", "allowConnect", "allowReact"] as const) {
       if (check[key] !== undefined && check[key] !== actual[key]) failures.push(`${check.role} in ${check.channel}: expected ${key}=${check[key]}, got ${actual[key]}`);
     }
   }
 
   const stage = channel("EFP All Hands");
+  if (!role("EFP Certified")) failures.push("Missing EFP Certified role");
   if (stage?.type !== ChannelType.GuildStageVoice) failures.push("EFP All Hands is not a Stage channel");
   for (const name of ["ideas-and-feedback", "recruiting-ideas", "arcadia-tickets", "idt-tickets", "office-questions"]) {
     if (channel(name)?.type !== ChannelType.GuildForum) failures.push(`${name} is not a Forum channel`);
