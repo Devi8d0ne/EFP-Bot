@@ -203,17 +203,17 @@ const seeds: Seed[] = [
     ],
     pin: true,
   },
-  {
-    channel: "live-sales-drops",
-    title: "Live Sales Drops",
-    description: "Drop the win when it happens. Post the completion screenshot with a short caption such as **1**, **Double**, or **9 to go** so the floor can celebrate and keep momentum visible.",
+  ...["Francis", "Dennis", "Dave", "Josiah"].map((team) => ({
+    channel: `${team.toLowerCase()}-team-live-sales-drops`,
+    title: `${team}'s Team | Live Sales Drops`,
+    description: `Drop ${team}'s team wins when they happen. Post the completion screenshot with a short caption such as **1**, **Double**, or **9 to go** so the floor can celebrate and keep momentum visible.`,
     fields: [
       { name: "Keep it moving", value: "Post completed sales only. One sale update per message. React, celebrate, and keep the floor momentum visible." },
       { name: "Official totals", value: "This is the real-time hype channel. Submit the EFP Wiki sales tracker at end of day for the official Daily Wall Chart totals." },
     ],
     color: GOLD,
     pin: true,
-  },
+  })),
   {
     channel: "morning-huddle",
     title: "Daily Sales Rhythm",

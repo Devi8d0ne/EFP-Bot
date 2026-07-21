@@ -42,7 +42,7 @@ export function displayCategoryName(name: string) {
 export function displayChannelName(definition: ChannelDefinition) {
   if (definition.name === "efp-daily-wall-chart") return "🏆・efp-daily-wall-chart";
   if (definition.name === "certification-wall") return "🎓・certification-wall";
-  if (definition.name === "live-sales-drops") return "📸・live-sales-drops";
+  if (definition.name.endsWith("team-live-sales-drops")) return `📸・${definition.name}`;
   const type = definition.type ?? ChannelType.GuildText;
   const emoji = type === ChannelType.GuildAnnouncement
     ? "📣"
@@ -203,12 +203,10 @@ export const serverLayout: {
       privateTo: MEMBER_ROLES,
       channels: [
         { name: "floor-chat", topic: "Live coordination while the sales floor is operating." },
-        {
-          name: "live-sales-drops",
-          topic: "Post sale-complete screenshots and a short running count so the team can celebrate wins in real time.",
-          allowReactions: true,
-          allowAttachments: true,
-        },
+        { name: "francis-team-live-sales-drops", topic: "Francis's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
+        { name: "dennis-team-live-sales-drops", topic: "Dennis's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
+        { name: "dave-team-live-sales-drops", topic: "Dave's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
+        { name: "josiah-team-live-sales-drops", topic: "Josiah's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
         { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
         { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "Main Sales Floor", type: ChannelType.GuildVoice },

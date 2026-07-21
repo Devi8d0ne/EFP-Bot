@@ -25,6 +25,7 @@
     ,"inspect:certification": "tsx src/inspect-certification-feed.ts"
     ,"cleanup:redundant-channels": "tsx src/remove-redundant-channels.ts"
     ,"inspect:app-feeds": "tsx src/inspect-app-feeds.ts"
+    ,"migrate:team-sales-drops": "tsx src/migrate-team-sales-drops.ts"
     ,"setup:certification": "tsx src/seed-certification.ts"
   },
   "engines": {
