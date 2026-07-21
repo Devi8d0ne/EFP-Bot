@@ -264,7 +264,11 @@ export function isCertificationModal(interaction: ModalSubmitInteraction) {
   return interaction.customId === CONNECT_MODAL_ID;
 }
 
-export async function handleConnectWikiModal(interaction: ModalSubmitInteraction<"cached">) {
+export async function handleConnectWikiModal(interaction: ModalSubmitInteraction) {
+  if (!interaction.guildId) {
+    await interaction.reply({ content: "Wiki connections can only be completed inside the EFP Discord server.", ephemeral: true });
+    return;
+  }
   if (!hasConnectCapacity(interaction.user.id)) {
     await interaction.reply({ content: "Too many connection attempts. Wait 15 minutes and try again.", ephemeral: true });
     return;
@@ -300,7 +304,8 @@ export async function handleConnectWikiModal(interaction: ModalSubmitInteraction
     await interaction.editReply("Your Discord profile is already connected to another EFP Wiki account. Ask an Admin to unlink it first.");
     return;
   }
-  await maybeRequestCertificationReview(interaction.guild, agentCode);
+  const guild = interaction.guild ?? await interaction.client.guilds.fetch(interaction.guildId);
+  await maybeRequestCertificationReview(guild, agentCode);
   connectAttempts.delete(interaction.user.id);
   const firstLesson = `${WIKI_URL}/?lesson=${lessons[0][1]}#lesson-test`;
   const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -309,7 +314,7 @@ export async function handleConnectWikiModal(interaction: ModalSubmitInteraction
   await interaction.editReply({ content: `Connected successfully as **${agent.name}**. Your email and ZIP were not stored. This connection tracks Wiki progress only; EFP management assigns server access roles.`, components: [buttons] });
 }
 
-export async function showMyProgress(interaction: ChatInputCommandInteraction<"cached"> | ButtonInteraction<"cached">, targetUserId = interaction.user.id) {
+export async function showMyProgress(interaction: ChatInputCommandInteraction | ButtonInteraction, targetUserId = interaction.user.id) {
   const state = await readState();
   const link = state.links[targetUserId];
   if (!link) {

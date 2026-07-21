@@ -41,7 +41,10 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() && isCertificationActionButton(interaction.customId)) {
-    if (!interaction.inCachedGuild()) return;
+    if (!interaction.inCachedGuild()) {
+      await interaction.reply({ content: "Discord could not load the EFP server context. Please try again.", ephemeral: true });
+      return;
+    }
     try {
       await handleCertificationActionButton(interaction);
     } catch (error) {
@@ -53,7 +56,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
   if (interaction.isButton() && [CONNECT_BUTTON_ID, PROGRESS_BUTTON_ID].includes(interaction.customId)) {
-    if (!interaction.inCachedGuild()) return;
+    console.log(`Certification button received: ${interaction.customId} from ${interaction.user.id}`);
+    if (!interaction.inGuild()) {
+      await interaction.reply({ content: "Use this button inside the EFP Discord server.", ephemeral: true });
+      return;
+    }
     try {
       if (interaction.customId === CONNECT_BUTTON_ID) await showConnectWikiModal(interaction);
       else await showMyProgress(interaction);
@@ -66,7 +73,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
   if (interaction.isModalSubmit() && isCertificationModal(interaction)) {
-    if (!interaction.inCachedGuild()) return;
+    console.log(`Wiki connection modal received from ${interaction.user.id}`);
+    if (!interaction.inGuild()) {
+      await interaction.reply({ content: "Complete the Wiki connection inside the EFP Discord server.", ephemeral: true });
+      return;
+    }
     try {
       await handleConnectWikiModal(interaction);
     } catch (error) {
@@ -90,7 +101,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   if (interaction.commandName === "my-progress") {
-    if (!interaction.inCachedGuild()) return;
     await showMyProgress(interaction);
     return;
   }
