@@ -1,6 +1,6 @@
 import { ChannelType, PermissionFlagsBits } from "discord.js";
 
-const MEMBER_ROLES = ["Admin", "Office", "General Manager", "Agent"];
+const MEMBER_ROLES = ["Admin", "Office", "General Manager", "Field Manager", "Agent"];
 const OPERATIONS_ROLES = ["Admin", "Office", "General Manager"];
 
 const ORDINARY_USER_PERMISSIONS: bigint[] = [
@@ -156,6 +156,7 @@ export const serverLayout: {
     },
     {
       name: "RECRUITING CENTER",
+      privateTo: MEMBER_ROLES,
       channels: [
         { name: "the-opportunity", topic: "Forward-facing EFP recruiting message: direct field sales, training, performance, and growth.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "who-fits-here", topic: "What EFP looks for: coachable, reliable, confident, mobile, team-minded, and growth-focused people.", readOnly: true, postAs: OPERATIONS_ROLES },
@@ -178,6 +179,7 @@ export const serverLayout: {
     },
     {
       name: "TRAINING & CERTIFICATION",
+      privateTo: MEMBER_ROLES,
       channels: [
         { name: "certification-roadmap", topic: "Nine coached lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "certification-wall", topic: "Celebrate agents who complete all nine lesson tests and pass final EFP certification.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },

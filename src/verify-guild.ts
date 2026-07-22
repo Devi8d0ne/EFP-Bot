@@ -15,10 +15,10 @@ try {
 
   const checks = [
     { role: "@everyone", channel: "welcome", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
-    { role: "@everyone", channel: "the-opportunity", allowView: true, allowSend: false },
-    { role: "@everyone", channel: "efp-jobs", allowView: true, allowSend: false },
-    { role: "@everyone", channel: "lesson-01-foundation", allowView: true, allowSend: false },
-    { role: "@everyone", channel: "certification-wall", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false, allowReact: true },
+    { role: "@everyone", channel: "the-opportunity", allowView: false, allowSend: false },
+    { role: "@everyone", channel: "efp-jobs", allowView: false, allowSend: false },
+    { role: "@everyone", channel: "lesson-01-foundation", allowView: false, allowSend: false },
+    { role: "@everyone", channel: "certification-wall", allowView: false, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
     { role: "@everyone", channel: "recruiting-playbook", allowView: false, allowSend: false },
     { role: "@everyone", channel: "recruiting-ideas", allowView: false, allowSend: false },
     { role: "@everyone", channel: "town-square", allowView: false, allowSend: false },
@@ -26,6 +26,8 @@ try {
     { role: "Agent", channel: "town-square", allowView: true, allowSend: true },
     { role: "Agent", channel: "agent-handbook", allowView: true, allowSend: false, allowThreadSend: false, allowCreatePublicThreads: false, allowCreatePrivateThreads: false },
     { role: "Agent", channel: "recruiting-playbook", allowView: true, allowSend: false },
+    { role: "Agent", channel: "the-opportunity", allowView: true, allowSend: false },
+    { role: "Agent", channel: "lesson-01-foundation", allowView: true, allowSend: false },
     { role: "Agent", channel: "Main Sales Floor", allowView: true, allowConnect: true },
     { role: "@everyone", channel: "francis-team-live-sales-drops", allowView: false, allowSend: false },
     { role: "Agent", channel: "francis-team-live-sales-drops", allowView: true, allowSend: true, allowAttach: true, allowReact: true },
