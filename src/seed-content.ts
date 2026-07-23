@@ -153,12 +153,13 @@ const seeds: Seed[] = [
   },
   {
     channel: "certification-roadmap",
-    title: "Nine-Lesson Certification Roadmap",
+    title: "Eleven-Lesson Certification Roadmap",
     description: "Read, listen, test, practice, and obtain coach sign-off before production.",
     fields: [
       { name: "Foundation", value: "1. Foundation and Field Process\n2. Psychology, Trust, and Reclosing\n3. Arcadia Community Solar" },
       { name: "Products and validation", value: "4. IDT Offer and Disclosures\n5. Transitions, Late Contentions, and Referrals\n6. LMI Document Validation\n7. Utility Bill Validation" },
       { name: "Field readiness", value: "8. Field Standards and Certification\n9. Rebuttal Frameworks and Reclosing" },
+      { name: "Workplace protection", value: "10. Workplace Sexual Harassment Prevention\n11. Substance-Free and Fit-for-Duty Standards" },
     ],
     pin: true,
   },

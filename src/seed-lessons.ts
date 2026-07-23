@@ -9,9 +9,11 @@ type Course = { lessons: Lesson[] };
 const WIKI_URL = "https://wiki.energyfreedomproject.site";
 const coursePath = process.env.EFP_WIKI_COURSE_PATH || resolve(process.cwd(), "../efp-wiki/src/course.json");
 const course = JSON.parse(await readFile(coursePath, "utf8")) as Course;
+const requestedLessons = new Set(process.argv.slice(2).map(Number).filter(Number.isInteger));
 const channelNames = [
   "lesson-01-foundation", "lesson-02-psychology", "lesson-03-arcadia", "lesson-04-idt", "lesson-05-transitions",
   "lesson-06-lmi-validation", "lesson-07-bill-validation", "lesson-08-field-standards", "lesson-09-rebuttals",
+  "lesson-10-harassment-prevention", "lesson-11-fit-for-duty",
 ];
 
 function splitCopy(value: string, max = 1850): string[] {
@@ -40,7 +42,7 @@ try {
   const guild = await client.guilds.fetch(config.guildId);
   const channels = await guild.channels.fetch();
   let seeded = 0;
-  for (const lesson of course.lessons) {
+  for (const lesson of course.lessons.filter((entry) => !requestedLessons.size || requestedLessons.has(entry.number))) {
     const channelName = channelNames[lesson.number - 1];
     if (!channelName) throw new Error(`No Discord channel configured for lesson ${lesson.number}`);
     const channel = channels.find((candidate) => candidate?.type === ChannelType.GuildText && matchesDisplayName(candidate.name, channelName));

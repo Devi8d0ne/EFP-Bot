@@ -28,7 +28,7 @@ run `npm run setup:guild`.
 and recruiting webhooks and stores their URLs in the ignored `.discord-webhooks.json` file. The bot
 is only a server-management bridge; the deployed sites deliver their own notifications.
 
-Run `npm run setup:lessons` locally after `setup:guild` to copy all nine complete lesson
+Run `npm run setup:lessons` locally after `setup:guild` to copy all eleven complete lesson
 scripts into their Discord channels and pin the matching hosted MP3 and wiki-test links.
 
 ## Wiki identity and certification
@@ -42,7 +42,7 @@ the private result feed and authenticates through its own ignored webhook config
 so Discord's privileged Message Content intent is not required.
 
 Wiki test-result webhook messages update progress automatically. Certification eligibility
-requires passing each of the nine distinct lesson tests plus the final assessment. Eligible
+requires passing each of the eleven distinct lesson tests plus the final assessment. Eligible
 agents are sent to private manager review; manager approval grants `EFP Certified` and posts
 the graduation to the certification wall. Use `/my-progress` for self-service status and
 `/certification` for management actions. Run `npm run setup:certification` to pin the Connect

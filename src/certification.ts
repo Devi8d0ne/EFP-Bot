@@ -90,6 +90,8 @@ const lessons = [
   [7, "07-utility-bill-validation", "Utility Bill Validation"],
   [8, "08-field-standards-and-certification", "Field Standards and Certification"],
   [9, "09-rebuttal-frameworks-and-reclosing", "Rebuttal Frameworks and Reclosing"],
+  [10, "10-workplace-harassment-prevention", "Workplace Sexual Harassment Prevention"],
+  [11, "11-substance-free-and-fit-for-duty", "Substance-Free and Fit-for-Duty Standards"],
 ] as const;
 
 function emptyState(): CertificationState {
@@ -182,7 +184,9 @@ function findLogicalChannel(guild: Guild, name: string) {
 }
 
 function progressFor(state: CertificationState, agentCode: string): AgentProgress {
-  return state.progress[agentCode] ??= { lessons: {}, completedLessons: 0, totalLessons: 9 };
+  const progress = state.progress[agentCode] ??= { lessons: {}, completedLessons: 0, totalLessons: lessons.length };
+  progress.totalLessons = lessons.length;
+  return progress;
 }
 
 function isCertificationEligible(progress?: AgentProgress) {
@@ -233,7 +237,7 @@ function progressText(link: AgentLink, progress?: AgentProgress) {
           : isCertificationEligible(progress)
             ? "⏳ Ready for manager review"
             : "▫️ Not yet eligible";
-  return `**${link.agentName}**\nAgent code: \`${link.agentCode}\`\nLesson progress reported by wiki: **${reported}/9**\nTracked passing results: **${passed}/9**\n\n${lessonLines.join("\n")}\n\n**Final certification:** ${finalStatus}\n**Manager review:** ${managerStatus}\n**Certified role:** ${isCertificationApproved(progress) ? "✅ Granted" : "▫️ Not granted"}`;
+  return `**${link.agentName}**\nAgent code: \`${link.agentCode}\`\nLesson progress reported by wiki: **${reported}/${lessons.length}**\nTracked passing results: **${passed}/${lessons.length}**\n\n${lessonLines.join("\n")}\n\n**Final certification:** ${finalStatus}\n**Manager review:** ${managerStatus}\n**Certified role:** ${isCertificationApproved(progress) ? "✅ Granted" : "▫️ Not granted"}`;
 }
 
 export async function showConnectWikiModal(interaction: ChatInputCommandInteraction | ButtonInteraction) {
@@ -390,7 +394,7 @@ async function sendLessonPassMessage(guild: Guild, agentCode: string, lessonNumb
   const next = lessons[lessonNumber];
   const content = next
     ? `✅ Lesson ${lessonNumber} passed. Next up: **Lesson ${next[0]} — ${next[2]}**.`
-    : "✅ Lesson 9 passed. Return to the EFP Wiki and complete the final certification assessment.";
+    : `✅ Lesson ${lessons.length} passed. Return to the EFP Wiki and complete the final certification assessment.`;
   const components = next
     ? [new ActionRowBuilder<ButtonBuilder>().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel(`Open Lesson ${next[0]}`).setURL(`${WIKI_URL}/?lesson=${next[1]}#lesson-test`))]
     : [];
@@ -484,7 +488,7 @@ async function maybeRequestCertificationReview(guild: Guild, agentCode: string) 
       embeds: [new EmbedBuilder()
         .setColor(0x4e8cff)
         .setTitle("Manager certification approval")
-        .setDescription(`The Wiki reports that **${activeAgent.name}** has nine lesson passes and a passing final assessment. These submitted results make the agent eligible for review; they do not independently verify field readiness.`)
+        .setDescription(`The Wiki reports that **${activeAgent.name}** has ${lessons.length} lesson passes and a passing final assessment. These submitted results make the agent eligible for review; they do not independently verify field readiness.`)
         .addFields(
           { name: "Wiki identity", value: `${link.agentName}\nAgent code: \`${agentCode}\``, inline: true },
           { name: "Wiki-reported results", value: "✅ Lessons 1–9 reported PASS\n✅ Final reported PASS", inline: true },
@@ -531,7 +535,7 @@ async function sendGraduationAnnouncement(guild: Guild, agentCode: string) {
     embeds: [new EmbedBuilder()
       .setColor(0xe6a817)
       .setTitle("EFP CERTIFIED")
-      .setDescription(`**${activeAgent.name}** completed all nine EFP lessons, passed the final certification assessment, and received manager approval.`)
+      .setDescription(`**${activeAgent.name}** completed all ${lessons.length} EFP lessons, passed the final certification assessment, and received manager approval.`)
       .addFields({ name: "Achievement", value: "🏆 EFP Certified", inline: true }, { name: "Next step", value: "Keep learning, apply the standard, and support the team.", inline: true })
       .setTimestamp()
       .setFooter({ text: marker })],
@@ -603,7 +607,7 @@ export async function handleCertificationActionButton(interaction: ButtonInterac
     }
 
     if (!isCertificationEligible(progress)) {
-      await interaction.editReply(`**${activeAgent.name}** is not currently eligible. All nine distinct lesson tests and the final assessment must show PASS.`);
+      await interaction.editReply(`**${activeAgent.name}** is not currently eligible. All ${lessons.length} distinct lesson tests and the final assessment must show PASS.`);
       return;
     }
     const member = await interaction.guild.members.fetch(discordId).catch(() => null);
@@ -645,7 +649,7 @@ async function processCertificationMessage(guild: Guild, channelId: string, mess
   const score = values.get("Score")?.trim() ?? "Not provided";
   const result = values.get("Result")?.trim().toUpperCase() ?? "REVIEW REQUIRED";
   const submittedAt = values.get("Submitted")?.trim() ?? new Date().toISOString();
-  const completedRaw = values.get("Completed Lesson Tests")?.trim() ?? "0/9";
+  const completedRaw = values.get("Completed Lesson Tests")?.trim() ?? `0/${lessons.length}`;
   if (!agentCode || !/^[a-z0-9-]{6,20}$/i.test(agentCode)) return false;
   const lessonMatch = subject.match(/EFP Wiki Test\s*[—-]\s*(\d+)\./i);
   const isFinal = /Final Certification/i.test(subject);
