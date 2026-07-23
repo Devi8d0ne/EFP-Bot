@@ -27,6 +27,8 @@
     ,"inspect:app-feeds": "tsx src/inspect-app-feeds.ts"
     ,"migrate:team-sales-drops": "tsx src/migrate-team-sales-drops.ts"
     ,"setup:certification": "tsx src/seed-certification.ts"
+    ,"setup:document-scans": "tsx src/setup-document-scans.ts"
+    ,"setup:new-training": "tsx src/setup-new-training.ts"
   },
   "engines": {
     "node": ">=20"

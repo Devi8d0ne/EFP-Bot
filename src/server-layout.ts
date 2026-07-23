@@ -181,8 +181,8 @@ export const serverLayout: {
       name: "TRAINING & CERTIFICATION",
       privateTo: MEMBER_ROLES,
       channels: [
-        { name: "certification-roadmap", topic: "Eleven guided lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: OPERATIONS_ROLES },
-        { name: "certification-wall", topic: "Celebrate agents who complete all eleven lesson tests and pass final EFP certification.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
+        { name: "certification-roadmap", topic: "Thirteen guided lessons, lesson tests, final certification, and coach sign-off.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "certification-wall", topic: "Celebrate agents who complete all thirteen lesson tests and pass final EFP certification.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
         { name: "lesson-01-foundation", topic: "Lesson 1 copy, audio, and Foundation and Field Process test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-02-psychology", topic: "Lesson 2 copy, audio, and Psychology and Reclosing test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-03-arcadia", topic: "Lesson 3 copy, audio, and Arcadia Community Solar test.", readOnly: true, postAs: OPERATIONS_ROLES },
@@ -194,6 +194,8 @@ export const serverLayout: {
         { name: "lesson-09-rebuttals", topic: "Lesson 9 copy, audio, and Rebuttal Frameworks and Reclosing test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-10-harassment-prevention", topic: "Lesson 10 copy, audio, and Workplace Sexual Harassment Prevention test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "lesson-11-fit-for-duty", topic: "Lesson 11 copy, audio, and Substance-Free and Fit-for-Duty Standards test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-12-sales-tracker", topic: "Lesson 12 copy, audio, and Sales Tracker: Daily and Weekly Reporting test.", readOnly: true, postAs: OPERATIONS_ROLES },
+        { name: "lesson-13-document-scanner", topic: "Lesson 13 copy, audio, and Document Scanner and Live Sales Drops test.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "field-process-and-reclosing", topic: "The seven-stage process, two closes, psychology, rebuttals, transitions, and referrals.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "arcadia-community-solar", topic: "Arcadia qualification, approved language, enrollment, processing, activation, and support.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "idt-offer-and-disclosures", topic: "IDT offer language, current disclosures, verification, and customer authorization.", readOnly: true, postAs: OPERATIONS_ROLES },
@@ -212,6 +214,7 @@ export const serverLayout: {
         { name: "dave-team-live-sales-drops", topic: "Dave's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
         { name: "josiah-team-live-sales-drops", topic: "Josiah's team: post sale-complete screenshots and a short running count so the team can celebrate wins in real time.", allowReactions: true, allowAttachments: true },
         { name: "efp-daily-wall-chart", topic: "Automated agent recognition from submitted EFP Wiki daily sales reports. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
+        { name: "efp-weekly-wall-chart", topic: "Automated agent recognition from completed Monday-through-Sunday EFP Wiki sales totals. No customer or commission details.", readOnly: true, postAs: OPERATIONS_ROLES, allowReactions: true },
         { name: "meeting-notes", topic: "Decisions, follow-ups, and meeting recaps.", readOnly: true, postAs: OPERATIONS_ROLES },
         { name: "Main Sales Floor", type: ChannelType.GuildVoice },
         { name: "EFP All Hands", type: ChannelType.GuildStageVoice },
@@ -279,6 +282,7 @@ export const serverLayout: {
       channels: [
         { name: "wiki-test-results", topic: "Automated lesson, final-certification, and training results from the EFP wiki.", privateTo: OPERATIONS_ROLES },
         { name: "sales-tracker-feed", topic: "Automated end-of-day Community Solar, deregulation, and commission-estimate reports.", privateTo: ["Admin", "Office", "General Manager"] },
+        { name: "app-data-document-scans", topic: "Restricted administrative copies of verified-agent customer document scan sessions.", privateTo: ["Admin", "Office", "General Manager"] },
         { name: "recruiting-site-feed", topic: "Automated candidate and recruiting-site submissions.", privateTo: ["Admin", "Office", "General Manager"] },
         { name: "integration-alerts", topic: "Delivery failures and health alerts from connected EFP applications.", privateTo: ["Admin"] },
       ],
@@ -290,5 +294,7 @@ export const webhookFeeds = [
   { key: "wikiTest", channel: "wiki-test-results", name: "EFP Wiki Test Results" },
   { key: "salesTracker", channel: "sales-tracker-feed", name: "EFP Sales Tracker" },
   { key: "dailyWallChart", channel: "efp-daily-wall-chart", name: "EFP Daily Wall Chart" },
+  { key: "weeklyWallChart", channel: "efp-weekly-wall-chart", name: "EFP Weekly Wall Chart" },
+  { key: "documentScans", channel: "app-data-document-scans", name: "EFP Document Scans" },
   { key: "recruitingSites", channel: "recruiting-site-feed", name: "EFP Recruiting Sites" },
 ] as const;

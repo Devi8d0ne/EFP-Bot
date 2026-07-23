@@ -92,6 +92,8 @@ const lessons = [
   [9, "09-rebuttal-frameworks-and-reclosing", "Rebuttal Frameworks and Reclosing"],
   [10, "10-workplace-harassment-prevention", "Workplace Sexual Harassment Prevention"],
   [11, "11-substance-free-and-fit-for-duty", "Substance-Free and Fit-for-Duty Standards"],
+  [12, "12-sales-tracker-daily-and-weekly-reporting", "Sales Tracker: Daily and Weekly Reporting"],
+  [13, "13-document-scanner-and-live-sales-drops", "Document Scanner and Live Sales Drops"],
 ] as const;
 
 function emptyState(): CertificationState {

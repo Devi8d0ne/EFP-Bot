@@ -13,7 +13,7 @@ const requestedLessons = new Set(process.argv.slice(2).map(Number).filter(Number
 const channelNames = [
   "lesson-01-foundation", "lesson-02-psychology", "lesson-03-arcadia", "lesson-04-idt", "lesson-05-transitions",
   "lesson-06-lmi-validation", "lesson-07-bill-validation", "lesson-08-field-standards", "lesson-09-rebuttals",
-  "lesson-10-harassment-prevention", "lesson-11-fit-for-duty",
+  "lesson-10-harassment-prevention", "lesson-11-fit-for-duty", "lesson-12-sales-tracker", "lesson-13-document-scanner",
 ];
 
 function splitCopy(value: string, max = 1850): string[] {
